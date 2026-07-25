@@ -1,0 +1,13 @@
+{
+  "name": "upside-agent-skills",
+  "owner": {
+    "name": "Upside"
+  },
+  "plugins": [
+    {
+      "name": "upside-agent-skills",
+      "description": "Try Upside from your AI assistant — register, trade, and stream on the QA testnet in plain language.",
+      "source": "./"
+    }
+  ]
+}

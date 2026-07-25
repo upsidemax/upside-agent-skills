@@ -1,0 +1,41 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-skills:
+    name: Lint SKILL.md frontmatter
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify each SKILL.md has YAML frontmatter with name + description
+        run: |
+          fail=0
+          for f in skills/*/SKILL.md; do
+            head -1 "$f" | grep -q '^---$' || { echo "❌ $f: missing YAML opener"; fail=1; }
+            grep -q '^name:' "$f" || { echo "❌ $f: missing 'name:'"; fail=1; }
+            grep -q '^description:' "$f" || { echo "❌ $f: missing 'description:'"; fail=1; }
+          done
+          [ $fail -eq 0 ] && echo "✓ all skills have valid frontmatter"
+          exit $fail
+
+  syntax-check-python:
+    name: Syntax-check example scripts
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: py_compile every example
+        run: |
+          fail=0
+          for f in examples/*.py; do
+            python3 -m py_compile "$f" || { echo "❌ $f"; fail=1; }
+          done
+          [ $fail -eq 0 ] && echo "✓ all examples compile"
+          exit $fail

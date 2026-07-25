@@ -1,0 +1,10 @@
+{
+  "name": "upside-agent-skills",
+  "description": "AI skills for Upside: a one-command guided test drive to experience the product, plus register, auto-airdrop, place/cancel orders, WebSocket streams, and agent delegation.",
+  "author": {
+    "name": "Upside Skills contributors"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/upsidemax/upside-agent-skills",
+  "repository": "https://github.com/upsidemax/upside-agent-skills.git"
+}

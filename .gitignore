@@ -1,0 +1,37 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+.env
+.env.*
+!.env.example
+
+# Node (in case someone adds JS examples later)
+node_modules/
+*.log
+npm-debug.log*
+yarn-error.log
+
+# Secrets & wallets (never commit)
+secrets/
+wallets/
+*.pem
+*.key
+!examples/*.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Reports / scratch
+scratch/
+*.local.md
