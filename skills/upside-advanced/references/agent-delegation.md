@@ -106,7 +106,7 @@ Response:
 | `tpSl`, `cancelTpSl` | ✅ | |
 | `updateLeverage` | ✅ | |
 | `lockCollateral`, `unlockCollateral` | ❌ | `errorCode: 30` "agent may sign trade actions only" |
-| `withdraw`, `transfer` | ❌ | `errorCode: 30` (or `http 400 unknown action.type` on QA — not yet implemented) |
+| `withdraw`, `transfer` | ❌ | `errorCode: 30`, or `http 400 unknown action.type` where the action is not available |
 | `approveAgent`, `revokeAgent` | ❌ | `errorCode: 30` — agents can't manage other agents |
 | `registerAccount` | ❌ | signer mismatch (agent addr != action.address) |
 
@@ -115,7 +115,7 @@ Response:
 ### Confirming Response — grant
 
 ```
-⚠  About to GRANT trading authority on Upside (QA).
+⚠  About to GRANT trading authority on Upside ({Mainnet | Devnet}).
 
   Master:       {master_aid} — {master_addr}
   Agent addr:   {agent_addr}
@@ -131,7 +131,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Agent Granted
 
 ```
-✓ Agent approved on Upside (QA)
+✓ Agent approved on Upside ({Mainnet | Devnet})
 
   Master:      {master_aid}
   Agent:       {agent_addr}
@@ -146,7 +146,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Confirming Response — revoke
 
 ```
-⚠  About to REVOKE agent on Upside (QA).
+⚠  About to REVOKE agent on Upside ({Mainnet | Devnet}).
 
   Master:       {master_aid} — {master_addr}
   Agent addr:   {agent_addr}
@@ -162,7 +162,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Agent Revoked
 
 ```
-✓ Agent revoked on Upside (QA)
+✓ Agent revoked on Upside ({Mainnet | Devnet})
 
   Master:  {master_aid}
   Agent:   {agent_addr}

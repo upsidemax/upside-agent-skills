@@ -18,21 +18,26 @@ pip install eth-account eth-keys eth-utils 'eth-hash[pycryptodome]'
 ## Constants for the examples
 
 ```bash
-export QA_BASE=https://dev.upsidemax.xyz
+export BASE=https://upsidemax.xyz          # Mainnet (default) — real funds, chainId 9788
+# export BASE=https://dev.upsidemax.xyz    # Devnet — chainId 9767
 ```
+
+The signing helper picks the EIP-712 chainId from `$BASE` (Mainnet 9788, Devnet 9767).
+For any other address, also `export UPSIDE_CHAIN_ID=<id>`. A signature over the wrong
+chainId is rejected with `401 SIGNATURE_INVALID`.
 
 ## /info — pure curl
 
 ### Market state
 ```bash
-curl -sS -X POST $QA_BASE/info \
+curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"marketState","asset":"1"}' | jq
 ```
 
 ### Order book
 ```bash
-curl -sS -X POST $QA_BASE/info \
+curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"l2Book","asset":"1"}' | jq
 ```
@@ -40,12 +45,12 @@ curl -sS -X POST $QA_BASE/info \
 ### Account balance (both layers)
 ```bash
 # mo=0 (DexLedger, chain-level unlocked)
-curl -sS -X POST $QA_BASE/info \
+curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"userAccount","accountId":"5","marketDeployerId":0}' | jq
 
 # MO=1 (trading margin)
-curl -sS -X POST $QA_BASE/info \
+curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"userAccount","accountId":"5","marketDeployerId":1}' | jq
 ```
@@ -54,14 +59,14 @@ curl -sS -X POST $QA_BASE/info \
 
 ### Open orders
 ```bash
-curl -sS -X POST $QA_BASE/info \
+curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"userOrders","accountId":"5","marketDeployerId":1,"contractId":0}' | jq
 ```
 
 ### List agents (bot keys) under an account
 ```bash
-curl -sS -X POST $QA_BASE/info \
+curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"userAgents","accountId":"5"}' | jq
 ```
@@ -80,12 +85,14 @@ sign_envelope() {
   local action_json="$2"
   local invite_code="${3:-}"
   python3 - "$privkey" "$action_json" "$invite_code" <<'PY'
-import json, sys, time
+import json, os, sys, time
 from eth_account import Account
 from eth_utils import keccak
 
-# --- EIP-712 domain ---
-CHAIN_ID = 9767
+# --- EIP-712 domain: chainId follows $BASE (Mainnet 9788, Devnet 9767) ---
+CHAIN_ID = int(os.environ.get("UPSIDE_CHAIN_ID") or
+               {"upsidemax.xyz": 9788, "dev.upsidemax.xyz": 9767}[
+                   os.environ.get("BASE", "https://upsidemax.xyz").split("://")[-1].split("/")[0]])
 NAME = "Exchange"
 VERSION = "1"
 SOURCE = "b"
@@ -169,20 +176,19 @@ PY
 
 ### Register a new account
 
-Step 1 — generate a fresh private key:
+Step 1 — generate a fresh private key and keep it in a file only you can read
+(never echo it — on Mainnet it controls real funds):
 ```bash
-PRIVKEY=$(python3 -c "import secrets; print('0x' + secrets.token_hex(32))")
+( umask 077; python3 -c "import secrets; print('0x' + secrets.token_hex(32))" > upside.key )
+PRIVKEY=$(cat upside.key)
 ADDR=$(python3 -c "from eth_keys import keys; print(keys.PrivateKey(bytes.fromhex('$PRIVKEY'[2:])).public_key.to_address())")
-echo "private key: $PRIVKEY"
-echo "address:     $ADDR"
+echo "address: $ADDR   (private key in ./upside.key — back it up)"
 ```
 
-**Save `$PRIVKEY` somewhere safe** — you'll need it for every subsequent write.
-
-Step 2 — register (with envelope-level alpha test invitation code). Request an alpha test invitation code from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable:
+Step 2 — register (with envelope-level invitation code, required on Mainnet and Devnet). Request one from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable:
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" "{\"type\":\"registerAccount\",\"address\":\"$ADDR\"}" "$UPSIDE_INVITE_CODE")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -204,32 +210,25 @@ Save it:
 export AID=5   # from the response
 ```
 
-### Wait for the auto-airdrop
+### Check the balance
 
-Simplest — a bash loop:
+A new account starts with a **zero balance** on every environment — fund it before
+trading (contact the Upside team for how). Check once:
 ```bash
-for i in $(seq 1 15); do
-  BAL=$(curl -sS -X POST $QA_BASE/info \
-    -H 'Content-Type: application/json' \
-    -d "{\"type\":\"userAccount\",\"accountId\":\"$AID\",\"marketDeployerId\":1}" \
-    | jq -r '.crossEquity // "0"')
-  echo "t=$((i*3))s  MO=1 crossEquity=$BAL"
-  if [ "$BAL" != "0" ] && [ "$BAL" != "null" ]; then
-    echo "✓ funds arrived"
-    break
-  fi
-  sleep 3
-done
+BAL=$(curl -sS -X POST $BASE/info \
+  -H 'Content-Type: application/json' \
+  -d "{\"type\":\"userAccount\",\"accountId\":\"$AID\",\"marketDeployerId\":1}" \
+  | jq -r '.crossEquity // "0"')
+echo "MO=1 crossEquity=$BAL"
+[ "$BAL" = "0" ] && echo "Account not funded yet — fund it before trading."
 ```
-
-If nothing arrives after 45 s → register a fresh wallet (misses are per-registration).
 
 ### Place a limit order
 
 ```bash
 ACTION='{"type":"order","grouping":"na","orders":[{"a":1,"b":true,"p":"100","s":"1","r":false,"t":{"limit":{"tif":"Gtc"}}}]}'
 ENV=$(sign_envelope "$PRIVKEY" "$ACTION")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -244,7 +243,7 @@ Response: `http 202`, `{"status":"accepted","response":{"type":"order","data":{"
 OID=12345
 ACTION="{\"type\":\"cancel\",\"cancels\":[{\"a\":1,\"o\":$OID}]}"
 ENV=$(sign_envelope "$PRIVKEY" "$ACTION")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -253,7 +252,7 @@ curl -sS -X POST $QA_BASE/exchange \
 
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" '{"type":"cancelAll","a":1}')
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -266,7 +265,7 @@ Response: `{"limitCancelled": N, "conditionalCancelled": M}`.
 OID=12345
 ACTION="{\"type\":\"modify\",\"oid\":$OID,\"order\":{\"a\":1,\"b\":true,\"p\":\"101\",\"s\":\"2\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Gtc\"}}}}"
 ENV=$(sign_envelope "$PRIVKEY" "$ACTION")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -275,7 +274,7 @@ curl -sS -X POST $QA_BASE/exchange \
 
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" '{"type":"updateLeverage","a":1,"leverage":5,"isIsolated":false}')
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -286,7 +285,7 @@ curl -sS -X POST $QA_BASE/exchange \
 AGENT_ADDR=0xbotAddressHere
 ACTION="{\"type\":\"approveAgent\",\"agentAddress\":\"$AGENT_ADDR\",\"agentName\":\"my-bot\"}"
 ENV=$(sign_envelope "$PRIVKEY" "$ACTION")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -295,7 +294,7 @@ curl -sS -X POST $QA_BASE/exchange \
 
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" "{\"type\":\"revokeAgent\",\"agentAddress\":\"$AGENT_ADDR\"}")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -305,7 +304,7 @@ curl -sS -X POST $QA_BASE/exchange \
 ```bash
 ACTION='{"type":"tpSl","a":1,"positionSide":0,"isPositionTpsl":true,"tpPrice":"1500","slPrice":"400","tpTriggerType":0,"slTriggerType":0}'
 ENV=$(sign_envelope "$PRIVKEY" "$ACTION")
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
@@ -313,22 +312,22 @@ curl -sS -X POST $QA_BASE/exchange \
 Cancel:
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" '{"type":"cancelTpSl","a":1,"positionSide":0}')
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' \
   -d "$ENV" | jq
 ```
 
 ### Move DexLedger → MO=1 margin
 
-If your airdrop landed in mo=0 instead of MO=1, migrate:
+If your funds are at the chain level (mo=0) instead of MO=1, migrate:
 
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" '{"type":"enrollUserToMarketOwner","marketDeployerId":1}')
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' -d "$ENV" | jq
 
 ENV=$(sign_envelope "$PRIVKEY" '{"type":"lockCollateral","marketDeployerId":1,"coinId":1,"amount":"1000000000000"}')
-curl -sS -X POST $QA_BASE/exchange \
+curl -sS -X POST $BASE/exchange \
   -H 'Content-Type: application/json' -d "$ENV" | jq
 ```
 
@@ -339,16 +338,19 @@ Copy-paste this whole block into a shell to run the end-to-end flow:
 ```bash
 #!/usr/bin/env bash
 set -e
-export QA_BASE=${QA_BASE:-https://dev.upsidemax.xyz}
+export BASE=${BASE:-https://upsidemax.xyz}   # Mainnet by default; Devnet: https://dev.upsidemax.xyz
 
 # EIP-712 signing helper — see "The signing helper" section above for full comments.
 sign_envelope() {
   python3 - "$1" "$2" "${3:-}" <<'PY'
-import json, sys, time
+import json, os, sys, time
 from eth_account import Account
 from eth_utils import keccak
 
-CHAIN_ID, NAME, VERSION, SOURCE = 9767, "Exchange", "1", "b"
+CHAIN_ID = int(os.environ.get("UPSIDE_CHAIN_ID") or
+               {"upsidemax.xyz": 9788, "dev.upsidemax.xyz": 9767}[
+                   os.environ.get("BASE", "https://upsidemax.xyz").split("://")[-1].split("/")[0]])
+NAME, VERSION, SOURCE = "Exchange", "1", "b"
 
 def _uint(v): return int(v or 0).to_bytes(32, "big")
 def _str(s):  return keccak((s or "").encode())
@@ -395,45 +397,48 @@ print(json.dumps(env))
 PY
 }
 
-echo "=== 1. Generate wallet ==="
-PRIVKEY=$(python3 -c "import secrets; print('0x' + secrets.token_hex(32))")
+echo "=== 1. Wallet (./upside.key, created if missing; never printed) ==="
+[ -f upside.key ] || ( umask 077; python3 -c "import secrets; print('0x' + secrets.token_hex(32))" > upside.key )
+PRIVKEY=$(cat upside.key)
 ADDR=$(python3 -c "from eth_keys import keys; print(keys.PrivateKey(bytes.fromhex('$PRIVKEY'[2:])).public_key.to_address())")
-echo "  private key: $PRIVKEY"
-echo "  address:     $ADDR"
+echo "  address: $ADDR"
 
 echo "=== 2. Register ==="
-# Set UPSIDE_INVITE_CODE to an alpha test invitation code obtained from the Upside team.
+# Set UPSIDE_INVITE_CODE to the invitation code obtained from the Upside team.
 ENV=$(sign_envelope "$PRIVKEY" "{\"type\":\"registerAccount\",\"address\":\"$ADDR\"}" "$UPSIDE_INVITE_CODE")
-RESP=$(curl -sS -X POST $QA_BASE/exchange -H 'Content-Type: application/json' -d "$ENV")
+RESP=$(curl -sS -X POST $BASE/exchange -H 'Content-Type: application/json' -d "$ENV")
 echo "  $RESP"
 AID=$(echo "$RESP" | python3 -c "import json,sys,re; d=json.load(sys.stdin); aid=d.get('response',{}).get('accountId'); m=re.search(r'accountId=(\d+)', d.get('message','') or ''); print(aid or (m.group(1) if m else ''))")
 echo "  accountId: $AID"
 
-echo "=== 3. Wait for airdrop ==="
-for i in $(seq 1 15); do
-  BAL=$(curl -sS -X POST $QA_BASE/info -H 'Content-Type: application/json' \
-    -d "{\"type\":\"userAccount\",\"accountId\":\"$AID\",\"marketDeployerId\":1}" \
-    | python3 -c "import json,sys; print(json.load(sys.stdin).get('crossEquity','0'))")
-  echo "  t=$((i*3))s  MO=1 crossEquity=$BAL"
-  [ "$BAL" != "0" ] && [ "$BAL" != "null" ] && break
-  sleep 3
-done
+echo "=== 3. Check balance ==="
+BAL=$(curl -sS -X POST $BASE/info -H 'Content-Type: application/json' \
+  -d "{\"type\":\"userAccount\",\"accountId\":\"$AID\",\"marketDeployerId\":1}" \
+  | python3 -c "import json,sys; print(json.load(sys.stdin).get('crossEquity','0'))")
+echo "  MO=1 crossEquity=$BAL"
+if [ "$BAL" = "0" ] || [ "$BAL" = "null" ]; then
+  echo "  A new account starts with a zero balance. Fund it (contact the Upside team), then re-run."
+  exit 0
+fi
 
-echo "=== 4. Place order (buy 1 @ 100) ==="
-ENV=$(sign_envelope "$PRIVKEY" '{"type":"order","grouping":"na","orders":[{"a":1,"b":true,"p":"100","s":"1","r":false,"t":{"limit":{"tif":"Gtc"}}}]}')
-curl -sS -X POST $QA_BASE/exchange -H 'Content-Type: application/json' -d "$ENV"
+# PRICE / SIZE are raw integers. Pick a price well below the mark (from marketState) so the
+# order rests, and a size that meets configs.minNotionalValue.
+PRICE=${PRICE:?set PRICE (raw)}; SIZE=${SIZE:?set SIZE (raw)}
+echo "=== 4. Place order (buy $SIZE @ $PRICE) ==="
+ENV=$(sign_envelope "$PRIVKEY" "{\"type\":\"order\",\"grouping\":\"na\",\"orders\":[{\"a\":1,\"b\":true,\"p\":\"$PRICE\",\"s\":\"$SIZE\",\"r\":false,\"t\":{\"limit\":{\"tif\":\"Gtc\"}}}]}")
+curl -sS -X POST $BASE/exchange -H 'Content-Type: application/json' -d "$ENV"
 
 sleep 2
 
 echo
 echo "=== 5. List orders ==="
-curl -sS -X POST $QA_BASE/info -H 'Content-Type: application/json' \
+curl -sS -X POST $BASE/info -H 'Content-Type: application/json' \
   -d "{\"type\":\"userOrders\",\"accountId\":\"$AID\",\"marketDeployerId\":1,\"contractId\":0}"
 
 echo
 echo "=== 6. Cancel all on contract 1 ==="
 ENV=$(sign_envelope "$PRIVKEY" '{"type":"cancelAll","a":1}')
-curl -sS -X POST $QA_BASE/exchange -H 'Content-Type: application/json' -d "$ENV"
+curl -sS -X POST $BASE/exchange -H 'Content-Type: application/json' -d "$ENV"
 echo
 ```
 
@@ -444,7 +449,7 @@ Save to `quick_start.sh`, `chmod +x`, run.
 If you have `websocat` installed:
 
 ```bash
-websocat wss://dev.upsidemax.xyz/ws
+websocat -H 'User-Agent: websocat' wss://upsidemax.xyz/ws     # Devnet: wss://dev.upsidemax.xyz/ws
 # then paste each subscribe line:
 {"method":"subscribe","subscription":{"type":"l2Book","asset":"1"}}
 ```

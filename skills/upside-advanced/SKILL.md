@@ -5,7 +5,7 @@ license: MIT
 metadata:
   author: upside-agent-skills
   version: "0.2.0"
-  homepage: "https://dev.upsidemax.xyz"
+  homepage: "https://upsidemax.xyz"
   agent:
     requires:
       python: ">=3.9"

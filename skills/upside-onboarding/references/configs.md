@@ -81,7 +81,7 @@ Optional filter: `{"type":"configs","marketDeployerId":N}` — trims contracts t
 
 ## When configs might mislead
 
-- **Contract display names can lie**: The old `REBATE-USDT` / `TICK10-USDT` / `BUILDER-USDT` contracts on current QA all have `quoteCoinId=1=USDC` despite the `-USDT` suffix — leftovers from a previous naming convention. Always derive settlement from `quoteCoinId` and MD's `settleCoinId`, not the string.
+- **Contract display names can lie**: a name suffix such as `-USDT` does not guarantee the settle coin — older contracts may carry a previous naming convention. Always derive settlement from `quoteCoinId` and MD's `settleCoinId`, not the string.
 - **`status != "Active"` contracts**: Skip these for trading — they may be paused or delisted.
 - **New coin listed mid-session**: `config` WS channel emits `CoinCreated` events; refresh `configs()` on receive.
 

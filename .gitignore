@@ -35,3 +35,6 @@ Thumbs.db
 # Reports / scratch
 scratch/
 *.local.md
+
+# Keys written by docs/curl-cookbook.md recipes
+upside.key

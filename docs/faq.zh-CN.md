@@ -25,9 +25,9 @@ Windows 上用 Git Bash 或 WSL。或者手动执行 pip 命令。
 
 ## 网络连接
 
-### 请求 `https://dev.upsidemax.xyz/info` 超时
-QA 环境可能暂时不可用，或您的网络阻断了该请求。
-1. 运行 `curl -v https://dev.upsidemax.xyz/info` 查看具体错误。
+### 请求 `https://upsidemax.xyz/info`（或 `https://dev.upsidemax.xyz/info`）超时
+端点可能暂时不可用，或您的网络阻断了该请求。
+1. 运行 `curl -v -X POST https://upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"configs"}'`（Devnet 用 `https://dev.upsidemax.xyz/info`）查看具体错误。
 2. 请稍后重试；若问题持续，请联系 Upside 团队。
 
 ### `POST /info` 返回 HTML 而非 JSON
@@ -63,12 +63,8 @@ aid = msg.split("accountId=")[-1].strip()
 
 ## 资金
 
-### `depositNonce = 0`，60 秒后仍无资金
-QA 空投偶尔不会到账。最简单的补救办法是重新注册一个新钱包：
-```bash
-python3 examples/01_register.py
-```
-空投未到账通常仅针对单次注册，新的注册一般会成功。
+### 注册后 `depositNonce = 0`、没有资金
+正常现象。新注册的账户在任何环境下余额都为 0，不会自动到账。交易前请先为账户注资（注资方式请联系 Upside 团队）。重新注册新钱包没有帮助。
 
 ### 余额字段全是 `null`
 您使用了 `marketOwnerId` 而非 `marketDeployerId`。正确的字段是 `marketDeployerId`；使用 `marketOwnerId` 会返回 null 字段而非报错。
@@ -78,7 +74,7 @@ python3 examples/01_register.py
 ```
 
 ### 钱在 `chainBalances` (mo=0) 但 `crossCollaterals` (MO=1) 空
-空投落到了 DexLedger 层。要下单需要迁移到 MO=1：
+资金在链上账本层（DexLedger）。要下单需要迁移到 MO=1：
 ```python
 send_exchange(pk, {"type":"enrollUserToMarketOwner","marketDeployerId":1})
 send_exchange(pk, {"type":"lockCollateral","marketDeployerId":1,"coinId":1,"amount":"1000000000000"})
@@ -156,7 +152,7 @@ threading.Thread(target=ping_forever, args=(ws,), daemon=True).start()
 2. Typed action 在 wire JSON 里漏了可选字段（`agentName` / `validUntil` / `amount` / …）。服务端对缺失字段的默认处理与客户端不同，字段必须显式出现在 JSON 中。`examples/common.py` 的 `sign_envelope` 会自动填入默认值；若您自行实现签名，请复制 `_TYPED_DEFAULTS` 步骤。
 3. Agent path 的 canonical JSON 有空格或 key 顺序不对（必须 `sort_keys=True, separators=(",",":")`）
 4. Nonce 不一致（envelope 层 nonce 跟传给 digest 的 nonce 不同）
-5. EIP-712 domain 错了（name/version/chainId 要跟 server 一致：`{Exchange, 1, 9767}`）
+5. EIP-712 domain 错了 —— name/version/chainId 要与环境一致：主网 `{Exchange, 1, 9788}`，Devnet `{Exchange, 1, 9767}`。两条签名路径都用这个 chainId。
 
 请以 `examples/common.py` 中的 `sign_envelope` 作为参考实现。
 
@@ -168,11 +164,13 @@ threading.Thread(target=ping_forever, args=(ws,), daemon=True).start()
 
 ## 环境 / 配置
 
-### 怎么切换到别的环境（UAT / mainnet）？
-在 `.env` 里设 `UPSIDE_BASE_URL`（或 export 环境变量）。`examples/common.py` 自动读取。**不要**指向 mainnet —— 这些脚本生成的私钥都是一次性 QA-only 的。
+### 脚本连的是哪个环境？怎么切换？
+默认主网（`https://upsidemax.xyz`，chainId 9788）—— 真实资金。要用 Devnet，在 `.env` 里设
+`UPSIDE_BASE_URL=https://dev.upsidemax.xyz`（或 export 环境变量）；WebSocket 地址和 chainId（9767）会随之切换。
+连其他地址时还要设 `UPSIDE_CHAIN_ID`。不同环境请用不同私钥。
 
 ### 私钥怎么跨脚本运行复用？
-把 `.env.example` 拷贝为 `.env`，填 `USER_PRIVATE_KEY`。`common.py` 用 `load_user_wallet()` helper 自动读取。见 [.env.example](../.env.example)。
+`01_register.py` 和 `quick_start.py` 会把私钥写进 `.env`（权限 600）且不打印；也可以把 `.env.example` 拷贝为 `.env` 自己填 `USER_PRIVATE_KEY`。`common.py` 用 `load_user_wallet()` helper 读取。见 [.env.example](../.env.example)。
 
 ### 能用 TypeScript / Rust / Go 代替 Python 吗？
 可以。移植 `examples/common.py` 里的签名 + HTTP 封装即可。wire format 与语言无关，签名算法详见 [../skills/upside-onboarding/_shared/signing.md](../skills/upside-onboarding/_shared/signing.md)。

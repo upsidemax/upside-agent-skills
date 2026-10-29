@@ -4,7 +4,7 @@ WebSocket wire format. The Upside WebSocket uses a JSON subscribe protocol: the 
 
 ## Workflow
 
-1. **Connect** to `wss://dev.upsidemax.xyz/ws`.
+1. **Connect** to `wss://upsidemax.xyz/ws` (Mainnet) or `wss://dev.upsidemax.xyz/ws` (Devnet).
 2. **Send subscribe** using the current format (see [Subscribe frame](#subscribe-frame)).
 3. **Expect ACK** on `channel: "subscriptionResponse"` within ~500 ms.
 4. **Read data** on `channel: "<type>"`.
@@ -131,12 +131,12 @@ Read-only. **Skip** the Confirming gate.
 |---|---|---|
 | WS handshake OK, subscribe sent, no messages | client using the unsupported `msg:"Subscribe"` form | switch to `method:"subscribe"` |
 | `BAD_SUBSCRIPTION missing/invalid params for type=l2Book` | wrong param name (`coin` / `contractId`) | use `asset` |
-| WS handshake returns HTTP 200 + text/html | the `/ws` path is not being proxied | verify the endpoint URL `wss://dev.upsidemax.xyz/ws`; see [`../../upside-onboarding/_shared/endpoints.md`](../../upside-onboarding/_shared/endpoints.md) |
+| WS handshake returns HTTP 200 + text/html | the `/ws` path is not being proxied | verify the endpoint URL (`wss://upsidemax.xyz/ws` or `wss://dev.upsidemax.xyz/ws`); see [`../../upside-onboarding/_shared/endpoints.md`](../../upside-onboarding/_shared/endpoints.md) |
 | Connection drops after 60 s idle | no client-side ping | add a periodic ping loop |
 | Messages stop after a high-volume burst | backpressure — the server closed the connection | reconnect and resume; check consumer speed |
 
 ## See also
 
 - [channels](channels.md) — per-channel parameter matrix
-- [payload-samples](payload-samples.md) — sample messages captured from QA
+- [payload-samples](payload-samples.md) — sample messages
 - [`../../upside-onboarding/_shared/endpoints.md`](../../upside-onboarding/_shared/endpoints.md) — endpoint URLs

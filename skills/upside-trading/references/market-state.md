@@ -4,7 +4,7 @@ Point-in-time price + funding info for one contract, plus order book depth.
 
 ## Workflow
 
-1. **Identify the contract**. If the user names a symbol (e.g. "BTC"), map to `contractId` via `/info configs.contracts[]` — do NOT hardcode a mapping. On current QA: `1=BTC-USDC, 2=ETH-USDC, 3=SOL-USDC`. Older QA had `BTC-USDT`. `examples/11_show_configs.py` prints the full list.
+1. **Identify the contract**. If the user names a symbol (e.g. "BTC"), map to `contractId` via `/info configs.contracts[]` — do NOT hardcode a mapping. Contract ids differ per environment. `examples/11_show_configs.py` prints the full list.
 2. **Query marketState first** (cheap, single fetch):
    ```bash
    python3 examples/04_market_info.py <contractId>
@@ -132,20 +132,20 @@ Read-only. **Skip** the Confirming gate.
 
 ## Numeric conversions
 
-Prices are decimal strings scaled by the contract's `priceScale` (usually 2 on QA):
+Prices are decimal strings scaled by the contract's `priceScale` (per contract — read it from `configs`):
 
 ```python
 mark_human = float(r["markPx"]) / 10**price_scale
 ```
 
-For contract-specific `priceScale`, query `contractSettings` (returned inside `userAccount` at MO≥1) or ask the Upside team. QA defaults to 2 for all three current contracts.
+Read each contract's `priceScale` from `/info configs` (`contracts[].priceScale`) — it differs per contract and is often `0`.
 
 ## Common failure modes
 
 | symptom | cause | fix |
 |---|---|---|
 | Response looks empty (`markPx:"0"`, `priceReady:false`) | oracle not pushing yet | not fixable client-side; wait or use a different contract |
-| Response is HTML | nginx SPA fallback — hit the front-end domain not the API | check the URL; see [_shared/endpoints.md](../../upside-onboarding/_shared/endpoints.md) |
+| Response is HTML | the request did not reach the API (wrong URL or method) | check the URL; see [_shared/endpoints.md](../../upside-onboarding/_shared/endpoints.md) |
 | `http 400 "missing or invalid asset"` | passed int instead of string | wrap `asset` as `str(contract_id)` |
 
 ## See also

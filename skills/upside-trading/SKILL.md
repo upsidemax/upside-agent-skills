@@ -5,7 +5,7 @@ license: MIT
 metadata:
   author: upside-agent-skills
   version: "0.2.0"
-  homepage: "https://dev.upsidemax.xyz"
+  homepage: "https://upsidemax.xyz"
   agent:
     requires:
       python: ">=3.9"
@@ -19,7 +19,7 @@ metadata:
 
 # Upside Trading
 
-Query market state, place/cancel/modify orders on the Upside QA environment. Assumes the user already has MO=1 balance (see [`../upside-onboarding/SKILL.md`](../upside-onboarding/SKILL.md) if not).
+Query market state, place/cancel/modify orders on Upside — **Mainnet** (`https://upsidemax.xyz`, real funds) by default, or Devnet (`https://dev.upsidemax.xyz`) via `UPSIDE_BASE_URL`. State the environment before the first order. Assumes the user already has MO=1 balance (see [`../upside-onboarding/SKILL.md`](../upside-onboarding/SKILL.md) if not).
 
 ## Intent Routing
 

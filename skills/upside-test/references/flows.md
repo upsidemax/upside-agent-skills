@@ -1,24 +1,27 @@
 # Test Drive flows — reference
 
 Every flow is a subcommand of `skills/upside-test/scripts/play.py`. The script
-reuses the QA-validated helpers in `examples/common.py` (signing, HTTP, configs,
+reuses the helpers in `examples/common.py` (signing, HTTP, configs,
 balances) — it adds no new protocol logic. Run from the repo root.
 
 ## Session wallet
 
-State lives in `~/.upside_test.json`:
+State lives in `~/.upside_test.<host>.json` — one file per environment
+(`~/.upside_test.upsidemax.xyz.json` for Mainnet,
+`~/.upside_test.dev.upsidemax.xyz.json` for Devnet), mode 600:
 
 ```json
-{ "private_key": "0x…", "address": "0x…", "account_id": "284" }
+{ "private_key": "0x…", "address": "0x…", "account_id": "284", "base_url": "https://upsidemax.xyz" }
 ```
 
 - Written by `register` / `order` / `full` (any flow that needs an account).
 - Read by `status` / `positions` / `orders` / `cancel`.
-- `reset` deletes it. QA-only testnet key — no real value.
+- `reset` moves it to a timestamped backup next to it — a key is never deleted.
+- On Mainnet it holds a real key: never read it into the conversation, never print it.
 
 ## Commands
 
-Output is **plain-language** (`✓ Order placed…`, `💰 Funded with…`) — raw HTTP
+Output is **plain-language** (`✓ Order placed…`, `💰 … available to trade`) — raw HTTP
 codes / JSON are intentionally hidden. Every standalone flow ends with a
 `→ Next:` suggestion. Relay these to the user in their language.
 
@@ -27,8 +30,8 @@ A global `--lang en|zh` (or env `UPSIDE_LANG`) switches the output language.
 | Command | Flags (defaults) | Does | Key output |
 | --- | --- | --- | --- |
 | `menu` | — | Flow list + session summary (orders/positions) | menu |
-| `full` | `--contract` `--price` `--size` `--show-key` | register → airdrop → **sell into the bid to open a real position** → show PnL → close | `🎯 It filled…` + close |
-| `register` | `--show-key` | new wallet → `registerAccount` → poll airdrop (≤45s, live countdown, one auto-retry) | `🎉 account created` + `💰 funded` |
+| `full` | `--contract` `--price` `--size` | account → balance (stops if zero) → limit buy 20% below mark at the minimum order value → cancel it | `✓ Order submitted…` + `✓ Cancelled…` |
+| `register` | — | new wallet → `registerAccount` → one balance check (zero → "fund the account first") | `🎉 Account created` + balance line |
 | `order` | `--side buy` `--price <mark>` `--size 1` `--contract <auto>` `--tif Gtc` `--show-code` `--again` | auto-registers, places a limit order, detects fill vs resting | `✓ Order placed…` → `🎯 filled` / resting id |
 | `close` | — | reduce-only opposite order to flatten each open position | `✓ Sent close…` + remaining count |
 | `status` | — | Balance + positions | balance + positions |
@@ -40,7 +43,7 @@ A global `--lang en|zh` (or env `UPSIDE_LANG`) switches the output language.
 | `explain` | `<topic>` | Plain-language concept (perp/leverage/limit/market/margin/funding/mark/tif) | one-liner |
 | `tour` | — | Narrated 5-step walkthrough, then runs `full` | narration + full |
 | `export` | `--path` | Writes the session wallet to `.env` for the `examples/` scripts | `.env` path |
-| `reset` | — | Forgets the session wallet | confirmation |
+| `reset` | — | Moves the session wallet to a timestamped backup | backup path |
 
 - Contract/price default to an **auto-picked live USDC contract** at its **mark price** (not a hardcoded id / unrealistic 100).
 - After each state-changing flow, a one-line **account snapshot** (balance · orders · positions) shows the effect.
@@ -49,14 +52,16 @@ A global `--lang en|zh` (or env `UPSIDE_LANG`) switches the output language.
 
 - **Async order response.** `order` returns `{"status":"accepted","response":{"type":"order","data":{"count":1}}}`.
   There is no `oid` in that body; the script resolves the order id from a
-  follow-up `userOrders` query. (Matches the public docs' documented QA behavior.)
-- **`priceReady=false`.** The order is accepted (`202`) but the matching engine
-  drops it. The script prints a warning; nothing errors.
-- **Airdrop layer.** Funds arrive as MO=1 cross collateral (tradeable). If they
-  ever land only in mo=0 (ledger), trading needs a `lockCollateral` migration —
-  out of scope here; route to `upside-onboarding`.
-- **WS 403.** The QA WebSocket sits behind CloudFront and rejects bare clients;
-  the script sends a browser `Origin` + `User-Agent` on the handshake.
+  follow-up `userOrders` query.
+- **`priceReady=false`.** The contract has no usable price yet; `full` stops and
+  asks for another contract.
+- **Zero balance.** A new account is empty on every environment. The script stops
+  with "fund the account first" — no polling, no re-registering.
+- **Funding layer.** Only MO=1 cross collateral can trade. Funds at mo=0 (chain
+  level) need an `enrollUserToMarketOwner` + `lockCollateral` migration — route to
+  `upside-onboarding`.
+- **WS 403.** Handshakes without a `User-Agent` are refused; the script sends a
+  `User-Agent` and an `Origin` matching the base URL.
 
 ## Extending
 

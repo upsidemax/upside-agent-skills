@@ -92,7 +92,7 @@ oids = [int(o["id"]) for o in r["orders"]]
 
 Populated:
 ```
-📋 Open Orders — Account {aid} (Upside QA)
+📋 Open Orders — Account {aid} (Upside {Mainnet | Devnet})
 
   ID       Contract  Side  Price          Size    Status    cloid
   ─────────────────────────────────────────────────────────────────

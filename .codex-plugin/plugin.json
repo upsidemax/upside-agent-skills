@@ -1,6 +1,6 @@
 {
   "name": "upside-agent-skills",
-  "description": "AI skills for Upside: a one-command guided test drive to experience the product, plus register, auto-airdrop, place/cancel orders, WebSocket streams, and agent delegation.",
+  "description": "AI skills for Upside: a one-command guided test drive to experience the product, plus register, balance checks, place/cancel orders, WebSocket streams, and agent delegation — on Mainnet or Devnet.",
   "author": {
     "name": "Upside Skills contributors"
   },

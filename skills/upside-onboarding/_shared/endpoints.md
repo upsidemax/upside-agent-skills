@@ -1,14 +1,25 @@
 # Endpoints
 
-## QA
+## Mainnet (default)
+
+```
+REST:  https://upsidemax.xyz/exchange
+REST:  https://upsidemax.xyz/info
+WS:    wss://upsidemax.xyz/ws
+EIP-712 chainId: 9788
+```
+
+## Devnet
 
 ```
 REST:  https://dev.upsidemax.xyz/exchange
 REST:  https://dev.upsidemax.xyz/info
 WS:    wss://dev.upsidemax.xyz/ws
+EIP-712 chainId: 9767
 ```
 
-TLS-terminated by nginx. `/exchange` handles all signed writes; `/info` handles all reads; `/ws` handles the JSON subscribe WebSocket protocol.
+Select Devnet with `UPSIDE_BASE_URL=https://dev.upsidemax.xyz`; the WebSocket URL and
+chainId follow it. Mainnet holds real funds. `/exchange` handles all signed writes; `/info` handles all reads; `/ws` handles the JSON subscribe WebSocket protocol.
 
 ## Header conventions
 
@@ -24,9 +35,9 @@ Connection: close
 ## Reachability check
 
 ```bash
-curl -s -m 5 -X POST https://dev.upsidemax.xyz/info \
+curl -s -m 5 -X POST https://upsidemax.xyz/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"marketState","asset":"1"}'
 ```
 
-Expected: JSON with `type: "marketState"`. If you get an HTML page, you hit nginx SPA fallback — usually because the domain's config is missing a `location /info` proxy.
+Expected: JSON with `type: "marketState"`. If you get an HTML page, the request did not reach the API — check the URL and method (`POST`), retry shortly, and contact the Upside team if it persists.

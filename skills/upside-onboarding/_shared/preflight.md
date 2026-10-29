@@ -13,10 +13,12 @@ If any import fails:
 ./install.sh
 ```
 
-## 2. QA reachable
+## 2. Endpoint reachable
+
+Default is Mainnet (`https://upsidemax.xyz`, real funds); Devnet is `https://dev.upsidemax.xyz`. Tell the user which one you are about to use.
 
 ```bash
-curl -s -m 5 -X POST https://dev.upsidemax.xyz/info \
+curl -s -m 5 -X POST https://upsidemax.xyz/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"marketState","asset":"1"}'
 ```
@@ -25,7 +27,7 @@ Expected: JSON starting with `{"type":"marketState","asset":"1",…}`.
 
 Failure modes:
 - **Timeout / connection refused** → retry shortly; if it persists, contact the Upside team.
-- **HTML response** → nginx SPA fallback; the domain's `/info` proxy is misconfigured. Retry shortly; if it persists, contact the Upside team.
+- **HTML response** → the request did not reach the API. Check the URL and that it is a `POST`; retry shortly; if it persists, contact the Upside team.
 - **HTTP 5xx** → backend unavailable; report and wait.
 
 ## 3. Contract exists
@@ -33,27 +35,19 @@ Failure modes:
 Once network is up, check that at least contractId=1 exists:
 
 ```bash
-curl -s -X POST https://dev.upsidemax.xyz/info \
+curl -s -X POST https://upsidemax.xyz/info \
   -H 'Content-Type: application/json' \
   -d '{"type":"marketState","asset":"1"}' | grep -q '"asset":"1"' && echo "contract 1 exists"
 ```
 
 If the response has `markPx: "0"` and `priceReady: false`, **the contract exists but is not ready to match orders yet**. Orders will be accepted (HTTP 202) but silently dropped by the matching engine. Not a blocker for skill demo, but do warn the user before placing orders on such a contract.
 
-## 4. Invite gate
+## 4. Invitation code
+
+Registration requires an invitation code on Mainnet and Devnet, supplied at envelope level as `inviteCode`. Check that it is set before registering:
 
 ```bash
-# Register a fresh wallet without alpha test invitation code
-python3 -c "
-from examples.common import send_exchange, new_wallet, addr_of
-pk, addr = new_wallet()
-code, r = send_exchange(pk, {'type':'registerAccount','address':addr})
-print('http', code, 'body', r)
-"
+[ -n "$UPSIDE_INVITE_CODE" ] && echo "invite code set" || echo "set UPSIDE_INVITE_CODE first"
 ```
 
-Two possible outcomes:
-- `http 200` → invite gate is off; skills won't need `inviteCode`.
-- `http 400 "inviteCode required"` → gate is on; an alpha test invitation code must be supplied at envelope level.
-
-If the gate is on, request an alpha test invitation code from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable. Including it when the gate is off is a no-op.
+Without it, `registerAccount` returns `http 400 "inviteCode required"`. Request a code from the Upside team. Codes are single-use, so do not spend one on a probe registration.

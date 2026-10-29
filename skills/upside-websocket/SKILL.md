@@ -5,7 +5,7 @@ license: MIT
 metadata:
   author: upside-agent-skills
   version: "0.2.0"
-  homepage: "https://dev.upsidemax.xyz"
+  homepage: "https://upsidemax.xyz"
   agent:
     requires:
       python: ">=3.9"
@@ -19,7 +19,7 @@ metadata:
 
 # Upside WebSocket
 
-Subscribe to real-time market and account streams. Endpoint: `wss://dev.upsidemax.xyz/ws`. Protocol: a JSON subscribe protocol — `{method:"subscribe", subscription:{…}}`.
+Subscribe to real-time market and account streams. Endpoint: `wss://upsidemax.xyz/ws` (Mainnet, default) or `wss://dev.upsidemax.xyz/ws` (Devnet). Protocol: a JSON subscribe protocol — `{method:"subscribe", subscription:{…}}`.
 
 ## Intent Routing
 

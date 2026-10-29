@@ -30,7 +30,7 @@ Skip the gate for:
 Render **verbatim** before running any state-changing script (substitute `{…}` placeholders):
 
 ```
-⚠  About to {operation summary} on Upside (QA).
+⚠  About to {operation summary} on Upside ({Mainnet — real funds | Devnet}).
 
   Account:   {accountId} — {address_short}
   Details:   {key details, one per line}
@@ -43,10 +43,10 @@ Reply "yes" to proceed, anything else to cancel.
 Concrete example — place order:
 
 ```
-⚠  About to PLACE ORDER on Upside (QA).
+⚠  About to PLACE ORDER on Upside (Mainnet — real funds).
 
   Account:   5 — 0x001cf1…5ec52
-  Details:   Contract 1  (BTC-<settle_coin_name>, e.g. BTC-USDC on current QA)
+  Details:   Contract 1  (BTC-<settle_coin_name>, e.g. BTC-USDC)
              Side        buy
              Price       100
              Size        1

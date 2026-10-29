@@ -2,10 +2,10 @@
 
 Two distinct error surfaces to know about:
 
-1. **HTTP status code** — from the envelope / parse layer, or from nginx
+1. **HTTP status code** — from the envelope / parse layer
 2. **`response.data.errorCode`** — a numeric field inside a `http 200` body, set by the business logic
 
-Both can carry `errorMessage`. HTTP messages are consistent; `errorMessage` in `data` is often truncated at 40 chars on QA.
+Both can carry `errorMessage`. HTTP messages are consistent; `errorMessage` in `data` may be truncated at 40 chars.
 
 ## Workflow
 
@@ -26,7 +26,7 @@ Both can carry `errorMessage`. HTTP messages are consistent; `errorMessage` in `
 | **504** | downstream backend timeout | `DOWNSTREAM_TIMEOUT` | `no response within 2000ms` |
 | **503** | node unavailable | — | `no available server` |
 
-Nginx-layer errors (before backend logic) return **HTML**, not JSON. Common one: `405 Not Allowed` on POST to `/info` when the domain's nginx is missing a `location /info` proxy_pass.
+Errors raised before the API is reached return **HTML**, not JSON — for example `405 Not Allowed` when the request goes to a wrong URL. Check the endpoint and that the request is a `POST`.
 
 ## Business `errorCode`
 
@@ -44,7 +44,7 @@ Numeric field inside `response.data`. `0` or missing = no error. Non-zero:
 
 ## Truncated error messages
 
-QA truncates `data.errorMessage` at 40 characters. Common truncated strings:
+`data.errorMessage` may be truncated at 40 characters. Common truncated strings:
 
 - `"invalid validUntil (must be 0 or > blo…"` — full: `"…block-height-derived cutoff)"`
 - `"ownerAccountId not registered (account …"` — full: `"…N: never deposited)"`

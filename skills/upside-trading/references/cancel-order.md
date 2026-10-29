@@ -77,7 +77,7 @@ For `cancelAll`: the response tells you exactly how many were cancelled (closed-
 Render **verbatim** per [_shared/confirming-response.md](../../upside-onboarding/_shared/confirming-response.md):
 
 ```
-⚠  About to CANCEL ALL orders on Upside (QA).
+⚠  About to CANCEL ALL orders on Upside ({Mainnet | Devnet}).
 
   Account:      {aid} — {addr_short}
   Contract:     {contractId} ({symbol_if_known})
@@ -90,7 +90,7 @@ Reply "yes" to proceed, anything else to cancel.
 
 ### Cancel Confirmed
 ```
-✓ Cancelled on Upside (QA)
+✓ Cancelled on Upside ({Mainnet | Devnet})
 
   Account:  {aid}
   Contract: {contractId}
@@ -99,7 +99,7 @@ Reply "yes" to proceed, anything else to cancel.
 
 ### CancelAll result
 ```
-✓ CancelAll executed on Upside (QA)
+✓ CancelAll executed on Upside ({Mainnet | Devnet})
 
   Account:              {aid}
   Contract:             {contractId}

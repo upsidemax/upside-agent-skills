@@ -92,8 +92,8 @@ To cancel just one (e.g. only the SL), use `cancel` with the specific `oid`:
 
 ## OneWay vs Hedge mode
 
-- **OneWay** (default on QA): one net position per contract. Always use `positionSide: 0`.
-- **Hedge** (not enabled on QA by default): separate long / short positions. Use `positionSide: 0` for long, `1` for short.
+- **OneWay** (default): one net position per contract. Always use `positionSide: 0`.
+- **Hedge** (currently unavailable): separate long / short positions. Use `positionSide: 0` for long, `1` for short.
 
 Verify via `userAccount.positions[0].positionSide`. If it says `"OneWay"`, use `0`.
 
@@ -154,7 +154,7 @@ Or explicit cancel:
 ### Confirming Response — attach
 
 ```
-⚠  About to ATTACH TP/SL on Upside (QA).
+⚠  About to ATTACH TP/SL on Upside ({Mainnet | Devnet}).
 
   Account:       {aid} — {addr_short}
   Contract:      {contractId} ({symbol_if_known})
@@ -173,7 +173,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### TP/SL Attached
 
 ```
-✓ TP/SL attached on Upside (QA)
+✓ TP/SL attached on Upside ({Mainnet | Devnet})
 
   Account:      {aid}
   Contract:     {contractId}
@@ -186,7 +186,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Confirming Response — cancel
 
 ```
-⚠  About to CANCEL TP/SL on Upside (QA).
+⚠  About to CANCEL TP/SL on Upside ({Mainnet | Devnet}).
 
   Account:       {aid}
   Contract:      {contractId}
@@ -202,7 +202,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### TP/SL Cancelled
 
 ```
-✓ TP/SL cancelled on Upside (QA)
+✓ TP/SL cancelled on Upside ({Mainnet | Devnet})
 
   Account:         {aid}
   Contract:        {contractId}

@@ -1,8 +1,10 @@
 """
 EIP-712 signing for the Upside `/exchange` endpoint.
 
-Digest is standard EIP-712 (domain name="Exchange" / version="1" / chainId=9767 /
-verifyingContract=0x0). Two auto-routed paths, selected by ``action["type"]``:
+Digest is standard EIP-712 (domain name="Exchange" / version="1" / chainId /
+verifyingContract=0x0). The chainId depends on the environment — 9788 on Mainnet,
+9767 on Devnet — and both signing paths use it. Two auto-routed paths, selected by
+``action["type"]``:
 
 * **Agent path** (trading / programmatic, most actions): the whole canonical action
   is folded into one ``actionHash`` carried by ``Agent(string source, bytes32 actionHash)``.
@@ -15,11 +17,14 @@ uintN -> 32-byte big-endian.
 """
 
 import json
+from urllib.parse import urlsplit
 
 from eth_utils import keccak
 
-# ── domain (single fixed value; must match server Eip712) ──
-CHAIN_ID = 9767
+# ── domain (must match the server of the environment you send to) ──
+MAINNET_CHAIN_ID = 9788   # https://upsidemax.xyz
+DEVNET_CHAIN_ID = 9767    # https://dev.upsidemax.xyz
+_CHAIN_IDS_BY_HOST = {"upsidemax.xyz": MAINNET_CHAIN_ID, "dev.upsidemax.xyz": DEVNET_CHAIN_ID}
 NAME = "Exchange"
 VERSION = "1"
 SOURCE = "b"  # Agent-path environment tag
@@ -103,23 +108,37 @@ def _normalize_typed_action(action: dict) -> None:
             action.setdefault(key, val)
 
 
-def _domain_separator() -> bytes:
+def chain_id_for(base_url: str) -> int:
+    """Chain id of the environment ``base_url`` points at.
+
+    Mainnet (upsidemax.xyz) → 9788, Devnet (dev.upsidemax.xyz) → 9767. Any other
+    host is refused: pass the chain id explicitly (UPSIDE_CHAIN_ID) instead of
+    guessing, because a signature over the wrong chain id is rejected (401).
+    """
+    host = urlsplit(base_url if "://" in base_url else "//" + base_url).hostname
+    if host not in _CHAIN_IDS_BY_HOST:
+        raise ValueError(f"unknown environment {base_url!r}: set UPSIDE_CHAIN_ID "
+                         f"({MAINNET_CHAIN_ID} = Mainnet, {DEVNET_CHAIN_ID} = Devnet)")
+    return _CHAIN_IDS_BY_HOST[host]
+
+
+def _domain_separator(chain_id: int) -> bytes:
     dom_type = (b"EIP712Domain(string name,string version,"
                 b"uint256 chainId,address verifyingContract)")
     return keccak(
         keccak(dom_type)
         + keccak(NAME.encode())
         + keccak(VERSION.encode())
-        + _uint(CHAIN_ID)
+        + _uint(chain_id)
         + b"\x00" * 32  # verifyingContract = 0x0
     )
 
 
-_DOMAIN_SEPARATOR = _domain_separator()
-
-
-def eip712_digest(action: dict, nonce: int) -> bytes:
+def eip712_digest(action: dict, nonce: int, chain_id: int) -> bytes:
     """Compute the 32-byte EIP-712 digest for ``action`` + ``nonce``.
+
+    ``chain_id`` is the environment's chain id (see :func:`chain_id_for`); the
+    Agent path and the typed path both sign over it.
 
     Routes by ``action["type"]`` to the Agent or typed path. For typed actions,
     mutates ``action`` in-place to inject default values for optional fields
@@ -137,14 +156,14 @@ def eip712_digest(action: dict, nonce: int) -> bytes:
         canonical = json.dumps(action, sort_keys=True, separators=(",", ":")).encode()
         action_hash = keccak(canonical + int(nonce).to_bytes(8, "big"))
         struct_hash = keccak(keccak(_AGENT_TYPE) + keccak(SOURCE.encode()) + action_hash)
-    return keccak(b"\x19\x01" + _DOMAIN_SEPARATOR + struct_hash)
+    return keccak(b"\x19\x01" + _domain_separator(chain_id) + struct_hash)
 
 
-def sign_signature(private_key, action: dict, nonce: int) -> dict:
+def sign_signature(private_key, action: dict, nonce: int, chain_id: int) -> dict:
     """Sign ``action`` + ``nonce`` and return the envelope ``signature`` dict."""
     from eth_account import Account
 
-    digest = eip712_digest(action, nonce)
+    digest = eip712_digest(action, nonce, chain_id)
     sig = Account._sign_hash(digest, private_key)
     return {
         "r": "0x" + sig.r.to_bytes(32, "big").hex(),

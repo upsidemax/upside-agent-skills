@@ -26,7 +26,7 @@ Each `SKILL.md` is written to be **self-loading**: when its frontmatter matches,
 
 ## Preferred tool patterns
 
-- Prefer `Bash` to run the Python examples over rewriting logic inline. The examples are already validated on QA.
+- Prefer `Bash` to run the Python examples over rewriting logic inline.
 - Use `Read` on reference files (like `signing.md`) rather than trying to derive the signing protocol from scratch.
 - Use `Edit` on `examples/*.py` when the user asks for a variation (e.g., "buy ETH instead of BTC") — copy the file, tweak the constants, don't rewrite.
 
@@ -38,7 +38,7 @@ Each `SKILL.md` is written to be **self-loading**: when its frontmatter matches,
 ## Common pitfalls
 
 1. **Order accepted but doesn't appear in `userOrders`** — the contract has `priceReady: false`. Backend accepts the request (202) but the matching engine silently drops it. Tell the user to wait until `priceReady` is true, or use a different contract that's already ready.
-2. **`auto-airdrop` doesn't fire** — usually just needs 10-30 seconds. If after 60s `depositNonce == 0` still, the simplest recovery is a fresh registration (a new wallet often lands the airdrop).
+2. **Balance is 0 after registering** — expected: a new account starts empty on every environment. The user has to fund it before trading (contact the Upside team for how); don't re-register to "get funds".
 3. **Balance query returns null everywhere** — account and balance queries must use the `marketDeployerId` field.
 
 ## When in doubt

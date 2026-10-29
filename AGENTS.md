@@ -34,13 +34,14 @@ If the request spans multiple skills, run onboarding first (it's the prerequisit
 Before any action, verify:
 
 1. **Deps installed** — `pip show eth-keys eth-utils requests websocket-client` should all return a version.
-2. **QA reachable** — `curl -s -m 5 -X POST https://dev.upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"marketState","asset":"1"}'` should return JSON with `type: "marketState"`. If not, retry shortly; if it persists, contact the Upside team.
-3. **User has a private key** — if not, `examples/01_register.py` generates one. Never accept a private key over chat; ask the user to run the script themselves.
+2. **Endpoint reachable** — `curl -s -m 5 -X POST https://upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"marketState","asset":"1"}'` should return JSON with `type: "marketState"`. If not, retry shortly; if it persists, contact the Upside team.
+3. **User has a private key** — if not, `examples/01_register.py` generates one and saves it to the local `.env` without printing it. Never accept a private key over chat; ask the user to run the script themselves.
+4. **Environment** — the default is **Mainnet** (`https://upsidemax.xyz`, real funds). Devnet is `UPSIDE_BASE_URL=https://dev.upsidemax.xyz`. Say which environment you are about to act on before the first write.
 
 ## Prohibited
 
-- **Never** use mainnet keys with these skills. QA only.
-- **Never** paste user private keys into responses or logs.
+- **Never** paste user private keys into responses or logs, and never print them from a script.
+- **Never** place a Mainnet order the user has not asked for; prefer the smallest size and a resting limit order when demonstrating.
 - **Never** guess field names — account and balance queries use `marketDeployerId`.
 
 ## Handling stale info

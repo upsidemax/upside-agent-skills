@@ -12,13 +12,18 @@ That is the complete flow. Read the sections below to understand each step.
 
 ## What is Upside?
 
-A decentralized perpetual futures exchange. You put up a stablecoin (USDC on recent QA / UAT, or USDT on older QA — chain-configurable) as collateral, and you can go long or short on contracts like `BTC-USDC`, `ETH-USDC`, etc. Every action (deposit, order, cancel) is a signed request from a wallet address — no username/password, no KYC on QA.
+A decentralized perpetual futures exchange. You put up a stablecoin (the settle coin — read it from `configs`) as collateral, and you can go long or short on contracts like `BTC-USDC`, `ETH-USDC`, etc. Every action (deposit, order, cancel) is a signed request from a wallet address — no username/password.
 
 **Which coin is the settle coin on this deployment?** Query `/info configs` — see `marketDeployers[0].settleCoinId`, then look up its name in `coins[]`. `examples/11_show_configs.py` prints the full snapshot.
 
-Signing uses **EIP-712** with secp256k1 (same primitives as Ethereum), domain `{name:"Exchange", version:"1", chainId:9767}`.
+Signing uses **EIP-712** with secp256k1 (same primitives as Ethereum), domain `{name:"Exchange", version:"1", chainId}` — the chainId depends on the environment.
 
-**QA endpoint**: `https://dev.upsidemax.xyz`  — test network, no real value, free test funds.
+| Environment | Endpoint | chainId | |
+|---|---|---|---|
+| **Mainnet** (default) | `https://upsidemax.xyz` | `9788` | real funds |
+| Devnet | `https://dev.upsidemax.xyz` | `9767` | testing — set `UPSIDE_BASE_URL` |
+
+Registration needs an invitation code on both. A new account starts with a zero balance and must be funded before it can trade.
 
 ## Prerequisites
 
@@ -57,14 +62,14 @@ Every account has funds in TWO places:
 | `mo=0` | **DexLedger** (chain-level ledger) | ❌ |
 | `MO=1` | **Market #1** (locked as trading margin) | ✅ |
 
-To move `mo=0 → MO=1`: run `enrollUserToMarketOwner` then `lockCollateral`. Or, when receiving test funds, use `marketDeployerId: 1` at the mint stage to land straight in MO=1.
+To move `mo=0 → MO=1`: run `enrollUserToMarketOwner` then `lockCollateral`.
 
 Analogy: `mo=0` is your bank account; `MO=1` is money you've transferred to your broker's margin account.
 
 ### 3. Contract vs coin
 
-- **Coin** (`coinId`): a currency. On current QA, `coinId=1` is **USDC** (settle), `coinId=2` is USDT, `coinId=3..5` are BTC / ETH / SOL. Older QA had USDT at `coinId=1` — do NOT hardcode; call `/info configs` and read `marketDeployers[0].settleCoinId`.
-- **Contract** (`contractId`): a tradeable pair. On current QA, `contractId=1` is `BTC-USDC`, `2` is `ETH-USDC`, `3` is `SOL-USDC`. Names come from `/info configs.contracts[].name`.
+- **Coin** (`coinId`): a currency. Ids differ per environment — do NOT hardcode; call `/info configs` and read `marketDeployers[0].settleCoinId`.
+- **Contract** (`contractId`): a tradeable pair (e.g. `BTC-USDC`). Ids differ per environment; names come from `/info configs.contracts[].name`.
 
 You trade a `contract`. Your P&L settles in the `settleCoin` (whichever the chain declared). Do NOT confuse `coinId` with `contractId` — they're different sequences.
 
@@ -83,7 +88,7 @@ Every write request (register / order / cancel / etc.) is signed with EIP-712. T
 - **Typed path** for account-level actions (`registerAccount`, `approveAgent`, `revokeAgent`, `lockCollateral`, `unlockCollateral`, `transferBetweenDeployers`) — each has its own typed struct.
 - **Agent path** for trading actions (`order`, `cancel`, `modify`, `tpSl`, `updateLeverage`, etc.) — the whole canonical JSON of `action` is folded into a single `actionHash` inside an `Agent(string source,bytes32 actionHash)` wrapper.
 
-Domain: `{name: "Exchange", version: "1", chainId: 9767, verifyingContract: 0x0}`.
+Domain: `{name: "Exchange", version: "1", chainId, verifyingContract: 0x0}` — chainId `9788` on Mainnet, `9767` on Devnet, for both paths.
 
 `examples/common.py` handles all of this. You only touch signing directly if you're writing a client in another language — see [../skills/upside-onboarding/_shared/signing.md](../skills/upside-onboarding/_shared/signing.md) for the full spec + reference implementation.
 
@@ -95,30 +100,28 @@ python3 examples/01_register.py
 
 Output:
 ```
-private key: 0x<64 hex>
-address:     0xbc441092113fc1ccb2a6197f095c11e730070fed
-✓ registered as accountId=26
+→ POST https://upsidemax.xyz/exchange
+  address:     0xbc441092113fc1ccb2a6197f095c11e730070fed
+  private key: saved to …/.env (USER_PRIVATE_KEY)
+
+✓ registered as accountId=26 (saved as USER_ACCOUNT_ID)
 ```
 
-**Save the private key** somewhere safe — you'll need it for every subsequent action. On QA it's fine to save in a plain file; on any other environment, use a secret manager.
+The private key is written to the gitignored `.env` (mode 600) and is **never printed** — on Mainnet it controls real funds. Back that file up; the other example scripts pick it up from there.
 
-Alternatively, put it into `.env` (see [.env.example](../.env.example)) so the other example scripts can pick it up without you passing it every time.
+### Why is there an invitation code?
 
-### Why is there an alpha test invitation code?
+Registration requires an invitation code on Mainnet and Devnet. Request one from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable. The code is placed at the envelope level (not inside `action`); `common.py` handles this.
 
-QA has `inviteCodeEnabled=true` to limit casual traffic. Request an alpha test invitation code from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable. The code is placed at the envelope level (not inside `action`); `common.py` handles this.
+## Step 2: Fund your account
 
-## Step 2: Wait for the auto-airdrop
-
-After registration, QA auto-mints test settle coin (currently **10,000 USDC** on QA — the amount is chain-configurable) to your account. This takes 10-30 seconds. Read the actual balance via `userAccount` rather than assuming a fixed amount.
+A newly registered account has a **zero balance** — nothing is credited automatically, on any environment. Fund it before trading (contact the Upside team for how), then check:
 
 ```bash
-python3 examples/02_wait_airdrop.py 26   # your aid from step 1
+python3 examples/02_check_funding.py      # uses USER_ACCOUNT_ID from .env
 ```
 
-You'll see `depositNonce` flip from `0` to `1`, and `crossCollaterals` (or `chainBalances`) get a large raw amount. To convert: `human = raw / 10**szDecimals` (szDecimals is `6` for both USDC and USDT).
-
-Occasionally the airdrop does not arrive. The simplest recovery is to register a fresh wallet: `python3 examples/01_register.py`. Airdrop misses are typically specific to an individual registration, so a new registration usually succeeds.
+It reads the balance once and stops with a clear message if it is still zero. To convert raw amounts: `human = raw / 10**szDecimals` (read `szDecimals` from `configs`).
 
 ## Step 3: Check your balance
 
@@ -146,7 +149,7 @@ Look at `priceReady`:
 - `true` → oracle is pushing; orders will actually match.
 - `false` → contract exists but no oracle price yet. Orders receive `202 accepted` but silently dropped by matching engine.
 
-If `priceReady: false`, wait for oracle service to start pushing, or try a different contract. All 3 contracts on QA (BTC, ETH, SOL) should have `priceReady: true` most of the time.
+If `priceReady: false`, wait, or try a different contract.
 
 ## Step 5: Place your first order
 
@@ -156,7 +159,7 @@ python3 examples/05_place_order.py 0x<your priv> 1 100 1 buy
 
 Arguments:
 - `0x<your priv>` — your private key
-- `1` — contractId (currently BTC-USDC on QA; run `11_show_configs.py` to see all)
+- `1` — contractId (run `11_show_configs.py` to see all)
 - `100` — limit price
 - `1` — order size
 - `buy` — direction
@@ -203,7 +206,7 @@ You've done the full loop. From here:
 | Use a separate key for the bot | [../skills/upside-advanced/references/agent-delegation.md](../skills/upside-advanced/references/agent-delegation.md) |
 | Attach a stop-loss to my position | [../skills/upside-advanced/references/tpsl.md](../skills/upside-advanced/references/tpsl.md) |
 | Understand an error I got | [faq.md](faq.md) or [../skills/upside-advanced/references/error-codes.md](../skills/upside-advanced/references/error-codes.md) |
-| Get more test funds | register another wallet (each fresh registration gets its own airdrop) |
+| Add funds | contact the Upside team |
 
 ## AI-assisted mode
 

@@ -17,7 +17,7 @@ Read `userAccount` to inspect balance, positions, and account config. Read-only;
 5. **Route on outcome**:
    - `MO=1 crossCollateral > 0` → user is ready to trade. Route to [`../../upside-trading/SKILL.md`](../../upside-trading/SKILL.md).
    - Only `mo=0` has funds → suggest `lockCollateral` to migrate.
-   - Both 0 → see [auto-airdrop](auto-airdrop.md) (airdrop miss recovery is to register a fresh wallet).
+   - Both 0 → the account is not funded yet; see [funding](funding.md). Do not re-register.
 
 ## Query
 
@@ -68,7 +68,7 @@ Field-by-field:
 |---|---|
 | `crossEquity` | total value in this market (raw units of `settleCoin`) |
 | `orderFrozen` | margin locked by open orders (increases when order enters book) |
-| `orderLoss` | unrealized loss on open orders (rarely non-zero on QA) |
+| `orderLoss` | unrealized loss on open orders |
 | `marginAvailable` | `crossEquity - orderFrozen - positionIM` — what's free right now |
 | `marginAvailableForOrder` | same as above minus reserves; use this to check before placing an order |
 | `totalPositionIM` | initial margin needed for currently-open positions |
@@ -105,7 +105,7 @@ Field-by-field:
 
 Ready to trade:
 ```
-✓ Account Balance (Upside QA)
+✓ Account Balance (Upside {Mainnet | Devnet})
 
   Account ID:              {aid}
   DexLedger (mo=0):        {usdt_mo0_formatted}
@@ -136,7 +136,7 @@ Empty:
 
   Account ID:              {aid}
   depositNonce:            {dn}
-  Suggested:               {if dn==0: "wait for airdrop; if >60s, register a fresh wallet" | "check with support"}
+  Suggested:               {if dn==0: "fund the account (contact the Upside team for how)" | "check with support"}
 ```
 
 ## Confirming Response
@@ -166,6 +166,6 @@ Follow [_shared/amount-display.md](../_shared/amount-display.md) for how to rend
 ## See also
 
 - [register](register.md) — get an accountId
-- [auto-airdrop](auto-airdrop.md) — get funds into the account
+- [funding](funding.md) — get funds into the account
 - [`../../upside-trading/references/user-orders.md`](../../upside-trading/references/user-orders.md) — separate query for open orders
 - [_shared/amount-display.md](../_shared/amount-display.md) — how to render numbers

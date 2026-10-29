@@ -11,8 +11,9 @@ Imports at the top of every example script:
     )
 
 Design notes:
-- Signing uses EIP-712 with the domain {name:"Exchange", version:"1", chainId:9767}.
-  Two auto-routed paths (per action type): a typed struct for account-level
+- Signing uses EIP-712 with the domain {name:"Exchange", version:"1", chainId}.
+  The chainId follows the environment (Mainnet 9788, Devnet 9767) and is picked
+  from BASE_URL; UPSIDE_CHAIN_ID overrides it. Two auto-routed paths (per action type): a typed struct for account-level
   actions (registerAccount / approveAgent / revokeAgent / lockCollateral / …)
   and an Agent-wrapped canonical-action hash for trading actions (order /
   cancel / modify / …). Details in examples/eip712.py + skills/upside-onboarding/
@@ -22,7 +23,7 @@ Design notes:
 
 Optional `.env` support (no external `python-dotenv` dep):
   Copy `.env.example` to `.env` (in repo root) and set USER_PRIVATE_KEY, USER_ACCOUNT_ID.
-  Other overrides: UPSIDE_BASE_URL, UPSIDE_WS_URL.
+  Other overrides: UPSIDE_BASE_URL, UPSIDE_WS_URL, UPSIDE_CHAIN_ID.
 """
 
 import os
@@ -34,7 +35,7 @@ import requests
 from eth_account import Account
 from eth_keys import keys
 
-from eip712 import eip712_digest
+from eip712 import chain_id_for, eip712_digest
 
 
 # ── .env loader (tiny, no external deps) ────────────────────
@@ -69,11 +70,17 @@ def _env(key, default=None):
 
 # ── Environment ─────────────────────────────────────────────
 
-BASE_URL = _env("UPSIDE_BASE_URL", "https://dev.upsidemax.xyz")
-WS_URL = _env("UPSIDE_WS_URL", "wss://dev.upsidemax.xyz/ws")
+# Mainnet by default. For Devnet set UPSIDE_BASE_URL=https://dev.upsidemax.xyz
+# (the WebSocket URL and chain id follow it unless set explicitly).
+MAINNET_BASE_URL = "https://upsidemax.xyz"
+DEVNET_BASE_URL = "https://dev.upsidemax.xyz"
 
-# Alpha test invitation code for QA registration. Request one from the Upside team and provide it
-# via the UPSIDE_INVITE_CODE environment variable (or a .env entry). None is bundled.
+BASE_URL = _env("UPSIDE_BASE_URL", MAINNET_BASE_URL).rstrip("/")
+WS_URL = _env("UPSIDE_WS_URL", "wss://" + BASE_URL.split("://", 1)[-1] + "/ws")
+CHAIN_ID = int(_env("UPSIDE_CHAIN_ID") or chain_id_for(BASE_URL))
+
+# Invitation code for registerAccount (required on Mainnet and Devnet). Request one from the
+# Upside team and provide it via UPSIDE_INVITE_CODE (or a .env entry). None is bundled.
 INVITE_CODE = _env("UPSIDE_INVITE_CODE", "")
 
 HEADERS = {"Connection": "close", "Content-Type": "application/json"}
@@ -94,7 +101,7 @@ def addr_of(pk):
 
 # ── Signing ──────────────────────────────────────────────────
 
-def sign_envelope(pk, action, nonce=None, invite_code=None):
+def sign_envelope(pk, action, nonce=None, invite_code=None, chain_id=None):
     """Build a signed request envelope for POST /exchange.
 
     Signs via EIP-712 (see eip712.py). For typed actions (registerAccount,
@@ -106,14 +113,15 @@ def sign_envelope(pk, action, nonce=None, invite_code=None):
         pk: eth_keys.PrivateKey instance
         action: dict with a `type` field
         nonce: int millisecond timestamp; auto-filled if None
-        invite_code: str; only needed for registerAccount when backend requires it
+        invite_code: str; only needed for registerAccount
+        chain_id: int; defaults to CHAIN_ID (the configured environment)
 
     Returns:
         dict ready to be POSTed as JSON.
     """
     if nonce is None:
         nonce = int(time.time() * 1000)
-    digest = eip712_digest(action, nonce)          # may mutate `action` in-place
+    digest = eip712_digest(action, nonce, chain_id or CHAIN_ID)   # may mutate `action` in-place
     sig = Account._sign_hash(digest, pk.to_hex())
     env = {
         "action": action,
@@ -133,7 +141,7 @@ def sign_envelope(pk, action, nonce=None, invite_code=None):
 
 def _post(path, json_body, base=None, timeout=15, retries=3):
     """POST with a small retry on transient network errors (connection resets, SSL
-    blips, timeouts) — QA occasionally drops a connection. Re-raises the last error
+    blips, timeouts). Re-raises the last error
     only if every attempt fails."""
     url = (base or BASE_URL) + path
     last = None
@@ -148,8 +156,11 @@ def _post(path, json_body, base=None, timeout=15, retries=3):
 
 
 def send_exchange(pk, action, base=None, invite_code=None, timeout=15):
-    """Sign + POST to /exchange. Returns (http_status, json_body)."""
-    env = sign_envelope(pk, action, invite_code=invite_code)
+    """Sign + POST to /exchange. Returns (http_status, json_body).
+
+    Signs over the chain id of ``base`` when given, otherwise the configured CHAIN_ID."""
+    chain_id = chain_id_for(base) if base and base.rstrip("/") != BASE_URL else None
+    env = sign_envelope(pk, action, invite_code=invite_code, chain_id=chain_id)
     r = _post("/exchange", env, base=base, timeout=timeout)
     try:
         return r.status_code, r.json()
@@ -189,7 +200,7 @@ def register_account(pk, base=None, invite_code=None):
     """
     invite_code = invite_code if invite_code is not None else INVITE_CODE
     if not invite_code:
-        print("  ! No alpha test invitation code set. Request one from the Upside team and set UPSIDE_INVITE_CODE.")
+        print("  ! No invitation code set. Request one from the Upside team and set UPSIDE_INVITE_CODE.")
         return None
     code, r = send_exchange(pk, {
         "type": "registerAccount",
@@ -320,15 +331,43 @@ def format_amount(raw, coin_or_id_or_name=None, base=None):
     return f"{int(raw) / 10**coin['szDecimals']:,.2f} {coin['name']}"
 
 
-# Back-compat alias — old code used usdt(). Now renders whichever coin is the
-# settle coin (USDT on old QA / USDC on newer QA & UAT). Same decimals (6) →
-# numeric output unchanged; only the label differs.
+# Back-compat alias — old code used usdt(). Renders whichever coin is the
+# market deployer's settle coin.
 def usdt(raw):
     """Deprecated: use format_amount(). Kept for back-compat."""
     return format_amount(raw)
 
 
-# ── .env-driven wallet loader ────────────────────────────────
+# ── .env-driven wallet loader / saver ───────────────────────
+
+ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
+
+
+def save_wallet(pk, account_id=None):
+    """Write USER_PRIVATE_KEY (and USER_ACCOUNT_ID) into the repo-root `.env`.
+
+    `.env` is gitignored and readable only by you (mode 600). The key is never
+    printed: on Mainnet it controls real funds, so it must not end up in a
+    terminal log or a chat transcript. Existing lines for these keys are replaced.
+    """
+    values = {"USER_PRIVATE_KEY": "0x" + pk.to_hex()[2:]}
+    if account_id is not None:
+        values["USER_ACCOUNT_ID"] = str(account_id)
+    lines = ENV_PATH.read_text(encoding="utf-8").splitlines() if ENV_PATH.exists() else []
+    kept = [ln for ln in lines if ln.partition("=")[0].strip() not in values]
+    kept += [f"{k}={v}" for k, v in values.items()]
+    ENV_PATH.write_text("\n".join(kept) + "\n", encoding="utf-8")
+    ENV_PATH.chmod(0o600)
+    for k, v in values.items():
+        _DOTENV[k] = v
+    return ENV_PATH
+
+
+FUNDING_HINT = (
+    "A newly registered account has a zero balance. Fund the account before trading\n"
+    "  (contact the Upside team for how to fund it), then re-run."
+)
+
 
 def load_user_wallet():
     """Load the user's private key and accountId from `.env` (repo root).

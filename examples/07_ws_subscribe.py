@@ -36,7 +36,7 @@ import time
 
 import websocket
 
-from common import WS_URL
+from common import BASE_URL, WS_URL
 
 
 def build_subscription(chan, asset, interval):
@@ -66,11 +66,11 @@ def main():
         sub = {"type": "orderUpdates", "user": args.address}
 
     print(f"→ WS connect  {WS_URL}")
-    # Browser-style handshake headers — QA's CloudFront WAF 403s bare clients.
+    # Send a User-Agent: handshakes without one are refused with 403.
     ws = websocket.create_connection(
         WS_URL, timeout=8,
         header=["User-Agent: Mozilla/5.0 (upside-dex-skills)"],
-        origin="https://dev.upsidemax.xyz",
+        origin=BASE_URL,
     )
     payload = {"method": "subscribe", "subscription": sub}
     print(f"→ send  {json.dumps(payload)}")

@@ -15,7 +15,7 @@ Each subdirectory is one skill: `SKILL.md` is the main entry with frontmatter; `
 Referenced by more than one skill:
 
 - [`upside-onboarding/_shared/signing.md`](upside-onboarding/_shared/signing.md) — EIP-712 envelope format
-- [`upside-onboarding/_shared/endpoints.md`](upside-onboarding/_shared/endpoints.md) — QA URLs, WS URL
+- [`upside-onboarding/_shared/endpoints.md`](upside-onboarding/_shared/endpoints.md) — Mainnet / Devnet URLs, WS URLs, chain IDs
 - [`upside-onboarding/_shared/preflight.md`](upside-onboarding/_shared/preflight.md) — env checks
 
 ## Skill file format

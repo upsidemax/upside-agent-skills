@@ -12,13 +12,18 @@
 
 ## Upside 是什么
 
-一个去中心化的永续合约交易所（perpetual futures DEX）。你用一种稳定币（当前 QA / UAT 上是 **USDC**，老版 QA 是 USDT —— 由链上初始化决定）做保证金，可以做多或做空 `BTC-USDC`、`ETH-USDC` 等合约。每次操作（充值、下单、撤单）都是由钱包地址签名发起的请求 —— 没有用户名密码，QA 环境也不需要 KYC。
+一个去中心化的永续合约交易所（perpetual futures DEX）。你用一种稳定币（结算币，从 `configs` 读取）做保证金，可以做多或做空 `BTC-USDC`、`ETH-USDC` 等合约。每次操作（充值、下单、撤单）都是由钱包地址签名发起的请求 —— 没有用户名密码。
 
 **当前部署到底用哪个币？** 查 `/info configs` —— 看 `marketDeployers[0].settleCoinId`，再在 `coins[]` 找到对应名字。跑 `examples/11_show_configs.py` 一次即可看到完整快照。
 
-签名采用 **EIP-712** + secp256k1（与以太坊相同的底层原语），domain 为 `{name:"Exchange", version:"1", chainId:9767}`。
+签名采用 **EIP-712** + secp256k1（与以太坊相同的底层原语），domain 为 `{name:"Exchange", version:"1", chainId}`，chainId 随环境而定。
 
-**QA 端点**：`https://dev.upsidemax.xyz`  — 测试网，无真实价值，测试资金免费领。
+| 环境 | 端点 | chainId | |
+|---|---|---|---|
+| **主网 Mainnet**（默认） | `https://upsidemax.xyz` | `9788` | 真实资金 |
+| Devnet | `https://dev.upsidemax.xyz` | `9767` | 测试用 —— 设 `UPSIDE_BASE_URL` |
+
+两个环境注册都需要邀请码。新账户余额为 0，注资后才能交易。
 
 ## 前置要求
 
@@ -60,14 +65,14 @@ python3 -m venv .venv && source .venv/bin/activate && ./install.sh
 | `mo=0` | **DexLedger**（链上通用账本） | ❌ |
 | `MO=1` | **Market #1**（锁作合约保证金） | ✅ |
 
-从 `mo=0 → MO=1`：先 `enrollUserToMarketOwner`，再 `lockCollateral`。或者，充值时直接指定 `marketDeployerId: 1`，钱直接落到 MO=1。
+从 `mo=0 → MO=1`：先 `enrollUserToMarketOwner`，再 `lockCollateral`。
 
 类比：`mo=0` 是你的银行账户；`MO=1` 是你转到券商保证金账户里的钱。
 
 ### 3. Contract vs coin
 
-- **Coin**（`coinId`）：币种。当前 QA 上 `coinId=1` 是 **USDC**（结算币），`coinId=2` 是 USDT，`coinId=3..5` 是 BTC / ETH / SOL。**不要硬编码**，用 `/info configs` 里的 `marketDeployers[0].settleCoinId` 决定。
-- **Contract**（`contractId`）：可交易的合约对。当前 QA `contractId=1` 是 `BTC-USDC`，`2` 是 `ETH-USDC`，`3` 是 `SOL-USDC`。名字来源 `/info configs.contracts[].name`。
+- **Coin**（`coinId`）：币种。不同环境编号不同，**不要硬编码**，用 `/info configs` 里的 `marketDeployers[0].settleCoinId` 决定。
+- **Contract**（`contractId`）：可交易的合约对（如 `BTC-USDC`）。不同环境编号不同，名字来源 `/info configs.contracts[].name`。
 
 你交易 `contract`，盈亏结算到 `settleCoin`（由链上声明的那个币）。**不要混淆 `coinId` 和 `contractId`** —— 它们是两套独立编号。
 
@@ -86,7 +91,7 @@ master 可选地授权最多 4 把 **agent 私钥**（1 个匿名 + 3 个具名�
 - **Typed path**：账户类动作（`registerAccount`、`approveAgent`、`revokeAgent`、`lockCollateral`、`unlockCollateral`、`transferBetweenDeployers`）—— 每个有自己的 typed struct。
 - **Agent path**：交易类动作（`order`、`cancel`、`modify`、`tpSl`、`updateLeverage` 等）—— 整个 action 的 canonical JSON 会被包成一个 `actionHash`，装进 `Agent(string source, bytes32 actionHash)` 包装里签。
 
-Domain：`{name: "Exchange", version: "1", chainId: 9767, verifyingContract: 0x0}`。
+Domain：`{name: "Exchange", version: "1", chainId, verifyingContract: 0x0}` —— 主网 chainId `9788`，Devnet `9767`，两条路径都用它。
 
 `examples/common.py` 都封装好了。除非要用别的语言写客户端，否则不用碰底层签名 —— 完整 spec + 参考实现见 [../skills/upside-onboarding/_shared/signing.md](../skills/upside-onboarding/_shared/signing.md)。
 
@@ -98,30 +103,28 @@ python3 examples/01_register.py
 
 输出：
 ```
-private key: 0x<64 hex>
-address:     0xbc441092113fc1ccb2a6197f095c11e730070fed
-✓ registered as accountId=26
+→ POST https://upsidemax.xyz/exchange
+  address:     0xbc441092113fc1ccb2a6197f095c11e730070fed
+  private key: saved to …/.env (USER_PRIVATE_KEY)
+
+✓ registered as accountId=26 (saved as USER_ACCOUNT_ID)
 ```
 
-**把私钥存好** —— 后面每次操作都要用。QA 上私钥存到普通文件里就行；其他环境请用密钥管理器。
-
-也可以把私钥写进 `.env`（见 [.env.example](../.env.example)），后续脚本自动读取，不用每次粘贴。
+私钥写进被 gitignore 的 `.env`（权限 600），**不会打印出来** —— 主网上它控制的是真实资金。请自行备份这个文件；其他示例脚本会从这里读取。
 
 ### 为什么需要邀请码？
 
-QA 开启了 `inviteCodeEnabled=true` 以限制随机流量。请向 Upside 团队申请邀请码，并通过 `UPSIDE_INVITE_CODE` 环境变量设置。邀请码放在 envelope 层（**不是** action 里）；`common.py` 会自动处理。
+主网和 Devnet 注册都需要邀请码。请向 Upside 团队申请，并通过 `UPSIDE_INVITE_CODE` 环境变量设置。邀请码放在 envelope 层（**不是** action 里）；`common.py` 会自动处理。
 
-## 第 2 步：等自动空投
+## 第 2 步：为账户注资
 
-注册完成后，QA 会自动向您的账户空投测试结算币（当前 QA 为 **10,000 USDC**；金额和币种由链上配置决定），通常 10-30 秒到账。实际金额以 `userAccount` 查询为准，请勿写死。
+新注册的账户余额为 **0** —— 任何环境都不会自动到账。交易前请先为账户注资（注资方式请联系 Upside 团队），然后检查：
 
 ```bash
-python3 examples/02_wait_airdrop.py 26   # 用第 1 步拿到的 aid
+python3 examples/02_check_funding.py      # 默认用 .env 里的 USER_ACCOUNT_ID
 ```
 
-你会看到 `depositNonce` 从 `0` 变成 `1`，`crossCollaterals`（或 `chainBalances`）里出现大量 raw units。换算规则：`human = raw / 10**szDecimals`（USDC 和 USDT 都是 `szDecimals=6`）。
-
-空投偶尔不会到账，此时最简单的补救办法是**重新注册一个新钱包**（`python3 examples/01_register.py`）。空投未到账通常仅针对单次注册，新的注册一般会成功。
+脚本只查一次余额，仍为 0 时会明确提示。raw 金额换算：`human = raw / 10**szDecimals`（`szDecimals` 从 `configs` 读取）。
 
 ## 第 3 步：查余额
 
@@ -149,7 +152,7 @@ python3 examples/04_market_info.py 1
 - `true` → 合约就绪，下单能真的成交。
 - `false` → 合约存在但撮合引擎不接单。下单会返 `202 accepted` 但静默丢弃。
 
-若 `priceReady: false`，等就绪或换个合约。QA 上 3 个合约（BTC / ETH / SOL）大部分时间 `priceReady: true`。
+若 `priceReady: false`，等就绪或换个合约。
 
 ## 第 5 步：下单
 
@@ -159,7 +162,7 @@ python3 examples/05_place_order.py 0x<你的私钥> 1 100 1 buy
 
 参数：
 - `0x<你的私钥>` — 你的私钥
-- `1` — contractId（当前 QA 是 BTC-USDC；跑 `11_show_configs.py` 看所有合约）
+- `1` — contractId（跑 `11_show_configs.py` 看所有合约）
 - `100` — 限价
 - `1` — 数量
 - `buy` — 方向
@@ -206,7 +209,7 @@ python3 examples/06_cancel_order.py cancel-all 0x<私钥> 1
 | 用单独的 key 跑机器人 | [../skills/upside-advanced/references/agent-delegation.md](../skills/upside-advanced/references/agent-delegation.md) |
 | 给仓位加止盈止损 | [../skills/upside-advanced/references/tpsl.md](../skills/upside-advanced/references/tpsl.md) |
 | 看懂某个报错 | [faq.zh-CN.md](faq.zh-CN.md) 或 [../skills/upside-advanced/references/error-codes.md](../skills/upside-advanced/references/error-codes.md) |
-| 拿更多测试资金 | 注册新钱包（每次新注册都有独立空投） |
+| 增加资金 | 联系 Upside 团队 |
 
 ## AI 辅助模式
 
@@ -229,7 +232,6 @@ python3 examples/06_cancel_order.py cancel-all 0x<私钥> 1
 | 主钥 / 母钥 | master (key) |
 | 代理钥 / 机器人钥 | agent (key) |
 | 保证金 | collateral / margin |
-| 空投 | airdrop |
 | 挂单 | place order / limit order |
 | 撤单 | cancel order |
 | 一键撤 | cancel all |

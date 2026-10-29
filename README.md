@@ -1,6 +1,6 @@
 # Upside Agent Skills
 
-AI agent skills for Upside, a decentralized, self-custody perpetual-futures exchange. The skills let an AI coding assistant register, trade, and stream over Upside's REST and WebSocket APIs on the QA testnet.
+AI agent skills for Upside, a decentralized, self-custody perpetual-futures exchange. The skills let an AI coding assistant register, trade, and stream over Upside's REST and WebSocket APIs — on **Mainnet** by default, or on Devnet.
 
 Each skill is a single Markdown file (`SKILL.md`) with a YAML frontmatter header. An AI agent can read the frontmatter to know *when* to activate a skill and *how* to complete a task, without needing the user to describe the flow.
 
@@ -14,8 +14,8 @@ Each skill is a single Markdown file (`SKILL.md`) with a YAML frontmatter header
 
 | skill | when to activate | main flow |
 |---|---|---|
-| [`upside-test`](skills/upside-test/SKILL.md) | user wants to **try / experience** the product ("let me try it", "体验") | one-command flows: register → real filled position → close, plus live market, explain, tour |
-| [`upside-onboarding`](skills/upside-onboarding/SKILL.md) | user has no account, or funds are 0 | register (needs alpha test invitation code) → wait for auto-airdrop → verify balance |
+| [`upside-test`](skills/upside-test/SKILL.md) | user wants to **try / experience** the product ("let me try it", "体验") | one-command flows: register → balance → place & cancel an order, plus live market, explain, tour |
+| [`upside-onboarding`](skills/upside-onboarding/SKILL.md) | user has no account, or funds are 0 | register (needs an invitation code) → check balance → fund the account if it is 0 |
 | [`upside-trading`](skills/upside-trading/SKILL.md) | user wants to trade, query price, or manage orders | market state → place limit/IOC → query orders → cancel |
 | [`upside-websocket`](skills/upside-websocket/SKILL.md) | user wants live price / fills / order updates | JSON `{method:"subscribe"}` on `l2Book / bbo / trades / config / orderUpdates` |
 | [`upside-advanced`](skills/upside-advanced/SKILL.md) | user asks about bots, TP/SL, or hits a numeric error code | agent delegation (approveAgent), TP/SL entries, full errorCode table |
@@ -30,7 +30,7 @@ cd upside-agent-skills-main
 
 ./install.sh                             # installs the Python dependencies
 export UPSIDE_INVITE_CODE=<your-code>    # request one from the Upside team
-python3 examples/quick_start.py          # e2e: register → wait for airdrop → place & cancel an order
+python3 examples/quick_start.py          # e2e on Mainnet: register → check balance → place & cancel an order
 ```
 
 > Only **Python 3.9+** is required. `curl`/`tar` (for the download) ship with macOS, Linux, and Windows 10+; `git` is optional.
@@ -42,19 +42,23 @@ Hit an error? Check **[docs/faq.md](docs/faq.md)** — every failure mode from t
 Prefer curl over Python? See **[docs/curl-cookbook.md](docs/curl-cookbook.md)** — every action in pure shell + a tiny inline Python signer.
 
 Want to save your key across script runs?
+`01_register.py` and `quick_start.py` save `USER_PRIVATE_KEY` / `USER_ACCOUNT_ID`
+to the gitignored `.env` for you (the key is never printed). Later scripts pick it up:
 ```bash
-cp .env.example .env
-# edit .env: fill USER_PRIVATE_KEY (from 01_register.py) and USER_ACCOUNT_ID
 python3 examples/10_use_saved_wallet.py   # picks up .env automatically
 ```
 
+A newly registered account has a **zero balance** — fund it before trading
+(contact the Upside team for how).
+
 ## Environments
 
-| env | REST base | WS base | alpha test invitation code required? |
-|---|---|---|---|
-| **QA (default)** | `https://dev.upsidemax.xyz` | `wss://dev.upsidemax.xyz/ws` | yes — request one from the Upside team |
+| env | REST base | WS base | EIP-712 chainId | invitation code required? |
+|---|---|---|---|---|
+| **Mainnet (default)** | `https://upsidemax.xyz` | `wss://upsidemax.xyz/ws` | `9788` | yes |
+| Devnet | `https://dev.upsidemax.xyz` | `wss://dev.upsidemax.xyz/ws` | `9767` | yes |
 
-> Set your alpha test invitation code with `export UPSIDE_INVITE_CODE=<your-code>` before registering. For UAT or production access, contact the Upside team.
+> Set your invitation code with `export UPSIDE_INVITE_CODE=<your-code>` before registering (request one from the Upside team). To use Devnet, `export UPSIDE_BASE_URL=https://dev.upsidemax.xyz`; the WebSocket URL and chain ID follow it. Mainnet is real funds — see [SECURITY.md](SECURITY.md).
 
 ## Three common mistakes to avoid
 
@@ -75,7 +79,7 @@ python3 examples/10_use_saved_wallet.py   # picks up .env automatically
 ├── README.md            # this file
 ├── AGENTS.md            # multi-agent routing
 ├── CLAUDE.md            # Claude Code specifics
-├── SECURITY.md          # test-key safety notes
+├── SECURITY.md          # key-safety notes
 ├── install.sh           # one-shot dep install
 ├── .env.example         # copy to .env to persist your key across runs
 ├── docs/                # human-readable guides
@@ -102,4 +106,4 @@ MIT — see [`LICENSE`](LICENSE).
 
 ## Contributing
 
-Field names, error codes, and channel semantics on QA change often as backend evolves. If a skill file drifts from reality, file an issue or a PR with the actual response you observed. All references include a "last verified" date.
+Field names, error codes, and channel semantics can change as the backend evolves. If a skill file drifts from reality, file an issue or a PR with the actual response you observed. All references include a "last verified" date.

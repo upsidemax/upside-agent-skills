@@ -36,7 +36,7 @@ Place a limit / IOC / FOK / post-only order. Fire-and-forget: HTTP `202` fast, m
 }
 ```
 
-Batch: pass multiple orders in the `orders` array. On QA, prefer 1-at-a-time for reliability (batches above ~5 sometimes hit `504 DOWNSTREAM_TIMEOUT`).
+Batch: pass multiple orders in the `orders` array. A batch holds at most 10 orders; if a synchronous batch returns `504 DOWNSTREAM_TIMEOUT`, the outcome is unknown — check `userOrders` before resending.
 
 ## Precision — convert display → raw before signing (critical)
 
@@ -55,9 +55,9 @@ size_raw  = round(display_size  * 10 ** c["qtyScale"])     # snap to c["stepSize
 
 - Use exact decimal arithmetic (Python `Decimal`, JS integer math) — floats
   drift on values like `0.1 × 10^4`.
-- Snap to the contract's `tickSize` / `stepSize` (both `1` on QA today).
-- On QA the majors are `priceScale = 2`, `qtyScale = 4`; **read the real values
-  per contract** rather than assuming — other markets differ.
+- Snap to the contract's `tickSize` / `stepSize`.
+- **Read `priceScale` / `qtyScale` per contract** from `configs` rather than
+  assuming — markets differ, and scales are often `0`.
 - Going the other way (raw → display) for confirmations and readback:
   [_shared/amount-display.md](../../upside-onboarding/_shared/amount-display.md).
 - The launcher does exactly this in `_px_to_raw` / `_sz_to_raw`
@@ -160,7 +160,7 @@ Detection: after 2-3 s, `userOrders` still returns 0 for that account/contract A
 Render **verbatim** per [_shared/confirming-response.md](../../upside-onboarding/_shared/confirming-response.md):
 
 ```
-⚠  About to PLACE ORDER on Upside (QA).
+⚠  About to PLACE ORDER on Upside ({Mainnet | Devnet}).
 
   Account:   {aid} — {addr_short}
   Contract:  {contractId} ({symbol_if_known})
@@ -182,7 +182,7 @@ Reply "yes" to proceed, anything else to cancel.
 After confirmation + successful submit + verified in `userOrders`:
 
 ```
-✓ Order placed on Upside (QA)
+✓ Order placed on Upside ({Mainnet | Devnet})
 
   Order ID:   {oid}
   Contract:   {contractId}

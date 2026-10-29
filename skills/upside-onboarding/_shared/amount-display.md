@@ -33,7 +33,7 @@ Python reference implementation: [`common.py::format_amount`](../../../examples/
 
 ## Contract prices
 
-Prices are decimal strings scaled by the contract's `priceScale` (usually 2 on QA):
+Prices are decimal strings scaled by the contract's `priceScale` (per contract — read it from `configs`, it is often `0`):
 
 ```
 human = int(mark_px_string) / 10**price_scale
@@ -51,7 +51,7 @@ For `priceReady: false`, render as `— (no oracle price)` — not "0".
 
 ## Sizes / positions
 
-Sizes are decimal strings in the contract's qty units. Scale by `qtyScale` (usually 4 on QA):
+Sizes are decimal strings in the contract's qty units. Scale by `qtyScale` (per contract — read it from `configs`):
 
 ```
 human = int(size_string) / 10**qty_scale

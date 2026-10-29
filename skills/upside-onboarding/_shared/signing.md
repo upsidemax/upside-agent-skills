@@ -9,7 +9,7 @@ Every write to `POST /exchange` carries a secp256k1 signature over an EIP-712 di
   "action":    { "type": "…", …arbitrary fields… },
   "signature": { "r": "0x…", "s": "0x…", "v": 27 | 28 },
   "nonce":     1784510817898,
-  "inviteCode": "<alpha test invitation code>" // ONLY for registerAccount, and ONLY when backend requires
+  "inviteCode": "<invitation code>" // ONLY for registerAccount (required on Mainnet and Devnet)
 }
 ```
 
@@ -20,9 +20,14 @@ Everything except `action` is envelope-level. In particular: **`inviteCode` and 
 ```
 name              = "Exchange"
 version           = "1"
-chainId           = 9767
+chainId           = 9788 on Mainnet (https://upsidemax.xyz)
+                    9767 on Devnet  (https://dev.upsidemax.xyz)
 verifyingContract = 0x0000000000000000000000000000000000000000
 ```
+
+The chainId is per environment and applies to **both** signing paths (Agent and typed). A
+signature over the wrong chainId recovers a different address and is rejected (401).
+`examples/common.py` picks it from `UPSIDE_BASE_URL`; `UPSIDE_CHAIN_ID` overrides it.
 
 Standard EIP-712: `keccak256(0x1901 || domainSeparator || structHash)`. `domainSeparator` = `keccak256(EIP712Domain-typeHash || keccak256(name) || keccak256(version) || chainId || verifyingContract)`.
 
@@ -75,7 +80,7 @@ import json
 from eth_account import Account
 from eth_utils import keccak
 
-CHAIN_ID = 9767
+CHAIN_ID = 9788          # Mainnet; Devnet (https://dev.upsidemax.xyz) is 9767
 NAME = "Exchange"
 VERSION = "1"
 SOURCE = "b"

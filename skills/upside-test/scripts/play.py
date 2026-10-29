@@ -3,12 +3,17 @@
 play.py — Upside one-command experience launcher.
 
 A thin orchestration layer over examples/common.py. Each subcommand runs one
-self-contained flow end-to-end against QA (https://dev.upsidemax.xyz) and prints
-a friendly, plain-language summary — no mainnet risk, wallet keys generated at
-runtime. Output is written for a person trying the product, not a debug log.
+self-contained flow end-to-end and prints a friendly, plain-language summary.
+Output is written for a person trying the product, not a debug log.
 
-A session wallet is persisted to ~/.upside_test.json so flows chain
-together: run `register` once, then `order` / `positions` / `cancel` reuse it.
+Targets Mainnet (https://upsidemax.xyz) by default — real funds. Set
+UPSIDE_BASE_URL=https://dev.upsidemax.xyz to use Devnet. Registration needs an
+invitation code (UPSIDE_INVITE_CODE) on both; a new account starts with a zero
+balance and must be funded before it can trade.
+
+A session wallet is persisted per environment to ~/.upside_test.<host>.json
+(mode 600) so flows chain together: run `register` once, then `order` /
+`positions` / `cancel` reuse it. The private key is never printed.
 
 Common commands:
   menu | register | full | order | close | positions | orders | cancel
@@ -25,7 +30,7 @@ import time
 from decimal import Decimal, ROUND_HALF_UP
 from pathlib import Path
 
-# Reuse the QA-validated helpers in examples/ (common.py imports eip712 by name,
+# Reuse the helpers in examples/ (common.py imports eip712 by name,
 # so the examples dir must be on sys.path).
 _EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
 sys.path.insert(0, str(_EXAMPLES))
@@ -53,7 +58,7 @@ try:
     import requests
     from eth_keys import keys
     from common import (
-        BASE_URL, WS_URL, INVITE_CODE,
+        BASE_URL, WS_URL, INVITE_CODE, FUNDING_HINT,
         new_wallet, send_exchange, sign_envelope, info, register_account,
         get_balance, get_all_balances, format_amount, get_contract, configs,
     )
@@ -62,7 +67,12 @@ except ModuleNotFoundError as e:
     print("  Install manually, then retry:  pip install " + " ".join(f"'{d}'" for d in _DEPS))
     sys.exit(1)
 
-SESSION = Path.home() / ".upside_test.json"
+_HOST = BASE_URL.split("://", 1)[-1].split("/", 1)[0]
+SESSION = Path.home() / f".upside_test.{_HOST}.json"
+# Sessions saved before Mainnet were Devnet-only and live in the old file name.
+_LEGACY_SESSION = Path.home() / ".upside_test.json"
+if _HOST == "dev.upsidemax.xyz" and not SESSION.exists() and _LEGACY_SESSION.exists():
+    SESSION = _LEGACY_SESSION
 MD = 1  # market deployer used for trading
 LANG = os.environ.get("UPSIDE_LANG", "en")
 
@@ -85,10 +95,12 @@ def load_session():
 
 def save_session(data):
     SESSION.write_text(json.dumps(data, indent=2))
+    SESSION.chmod(0o600)   # holds the private key
 
 
 def _new_session(pk, addr, aid):
-    save_session({"private_key": pk.to_hex(), "address": addr, "account_id": str(aid)})
+    save_session({"private_key": pk.to_hex(), "address": addr, "account_id": str(aid),
+                  "base_url": BASE_URL})
 
 
 def _update_session(**kw):
@@ -162,7 +174,7 @@ def _best(cid):
 
 def _scales(cid):
     """(priceScale, qtyScale, tickSize, stepSize) for a contract, from configs.
-    Falls back to the common QA shape only if configs is unreachable."""
+    Falls back to a common shape only if configs is unreachable."""
     c = get_contract(cid) or {}
     return (int(c.get("priceScale", 2)), int(c.get("qtyScale", 4)),
             int(c.get("tickSize", 1)), int(c.get("stepSize", 1)))
@@ -195,64 +207,50 @@ def _sz_from_raw(raw, cid):
     return s.rstrip('0').rstrip('.') if '.' in s else s
 
 
-# ── airdrop wait (with live countdown + one auto-retry) ──────
-
-def _wait_airdrop(aid, timeout=45):
-    for elapsed in range(0, timeout + 1, 3):
-        mo0, mo1 = get_balance(aid)
-        if mo1 > 0 or mo0 > 0:
-            return mo0, mo1
-        print(L(f"   …still waiting ({elapsed}s)", f"   …等待中（已 {elapsed}s）"))
-        time.sleep(3)
-    return 0, 0
-
-
-def do_register(show_key=False, _retry=True):
+def do_register():
     if not INVITE_CODE:
-        print(L("✗ No alpha test invitation code set. Request one from the Upside team, then set it and retry:",
+        print(L("✗ No invitation code set. Request one from the Upside team, then set it and retry:",
                 "✗ 未设置邀请码。请向 Upside 团队索取,设置后重试:"))
         print("    export UPSIDE_INVITE_CODE=<your-code>")
         sys.exit(1)
     pk, addr = new_wallet()
     aid = register_account(pk)
     if not aid:
-        print(L("✗ Registration failed. Check that QA is reachable, then retry.",
-                "✗ 注册失败。请确认 QA 可访问后重试。"))
+        print(L(f"✗ Registration failed. Check that {BASE_URL} is reachable, then retry.",
+                f"✗ 注册失败。请确认 {BASE_URL} 可访问后重试。"))
         sys.exit(1)
-    print(L(f"🎉 Test account created   (wallet {_short(addr)})",
-            f"🎉 测试账户已创建   （钱包 {_short(addr)}）"))
-    if show_key:
-        print(L(f"   private key: {pk.to_hex()}   (QA-only testnet key — no real value)",
-                f"   私钥：{pk.to_hex()}   （仅 QA 测试网,无真实价值）"))
-    else:
-        print(L("   A throwaway QA wallet was generated and saved locally (add --show-key to reveal it).",
-                "   已生成一个一次性 QA 钱包并保存在本地（加 --show-key 可显示私钥）。"))
-    print(L("   Waiting for the welcome airdrop (~10-30s)…", "   正在等待欢迎空投（约 10-30 秒）…"))
-    mo0, mo1 = _wait_airdrop(aid)
-    if mo0 == 0 and mo1 == 0:
-        if _retry:
-            print(L("   ⏳ No funds yet — trying once more with a fresh wallet…",
-                    "   ⏳ 还没到账 — 用新钱包再试一次…"))
-            return do_register(show_key=show_key, _retry=False)
-        print(L("   ⏳ Still no airdrop. This happens occasionally on QA — run `register` again in a moment.",
-                "   ⏳ 仍未收到空投。QA 偶尔会这样 — 稍后再运行一次 `register`。"))
-    elif mo1 > 0:
-        print(L(f"💰 Funded with {format_amount(mo1)} of test money — you're ready to trade.",
-                f"💰 已到账 {format_amount(mo1)} 测试金 — 可以开始交易了。"))
-    else:
-        print(L(f"💰 Airdrop received ({format_amount(mo0)}), but it's still in the ledger layer and not tradeable yet.",
-                f"💰 已收到空投（{format_amount(mo0)}），但还在账本层、暂不可交易。"))
     _new_session(pk, addr, aid)
+    print(L(f"🎉 Account created   (wallet {_short(addr)}, accountId {aid})",
+            f"🎉 账户已创建   （钱包 {_short(addr)}，accountId {aid}）"))
+    print(L(f"   The private key is saved in {SESSION} (readable only by you) — back it up; it is not shown here.",
+            f"   私钥保存在 {SESSION}（仅你可读）—— 请自行备份；这里不显示。"))
+    _funding_status(aid)
     return pk, addr, aid
 
 
-def ensure_account(auto=True, show_key=False):
+def _funding_status(aid):
+    """Report whether the account can trade. Returns the tradeable (MO=1) balance."""
+    mo0, mo1 = get_balance(aid)
+    if mo1 > 0:
+        print(L(f"💰 {format_amount(mo1)} available to trade.", f"💰 {format_amount(mo1)} 可交易。"))
+    elif mo0 > 0:
+        print(L(f"💰 {format_amount(mo0)} is at the chain level and not tradeable yet — move it in as margin "
+                "(enrollUserToMarketOwner + lockCollateral).",
+                f"💰 {format_amount(mo0)} 在链上账本层、暂不可交易 —— 需先转入为保证金"
+                "（enrollUserToMarketOwner + lockCollateral）。"))
+    else:
+        print(L("⚠  " + FUNDING_HINT,
+                "⚠  新注册账户余额为 0。交易前请先为账户注资（注资方式请联系 Upside 团队），然后重试。"))
+    return mo1
+
+
+def ensure_account(auto=True):
     sess = load_session()
     if sess and sess.get("account_id"):
         return _pk_from(sess), sess["address"], sess["account_id"]
     if not auto:
         return None, None, None
-    return do_register(show_key=show_key)
+    return do_register()
 
 
 # ── read helpers ─────────────────────────────────────────────
@@ -306,7 +304,7 @@ _MENU = [
     ("ticker",    "A compact live price ticker",                       "精简的实时价格条"),
     ("explain",   "Plain explanation of a concept",                    "大白话讲解一个概念"),
     ("tour",      "Guided, narrated walkthrough",                      "带旁白的分步导览"),
-    ("register",  "Create a fresh test account",                       "创建全新测试账户"),
+    ("register",  "Create a new account",                              "创建新账户"),
     ("reset",     "Start over with a brand-new wallet",                "换全新钱包重来"),
 ]
 
@@ -314,8 +312,9 @@ _MENU = [
 def cmd_menu():
     sess = load_session()
     print("=" * 62)
-    print(L("Upside — Test Drive   (QA testnet, no real funds)",
-            "Upside — 体验场   （QA 测试网,无真实资金）"))
+    env_en, env_zh = (("Mainnet — real funds", "主网 —— 真实资金") if _HOST == "upsidemax.xyz"
+                      else (f"{_HOST}", f"{_HOST}"))
+    print(L(f"Upside — Test Drive   ({env_en})", f"Upside — 体验场   （{env_zh}）"))
     print("=" * 62)
     print(L("A decentralized perpetual-futures exchange — try the whole flow in single",
             "去中心化永续合约交易所 —— 用编号一步步体验。"))
@@ -427,9 +426,9 @@ def _print_code(action, aid_pk):
             "   复现方式:examples/common.py → send_exchange(pk, action)。参考 examples/05_place_order.py。"))
 
 
-def cmd_order(side="buy", price=None, size="1", contract=None, tif="Gtc", show_key=False,
+def cmd_order(side="buy", price=None, size="1", contract=None, tif="Gtc",
               show_code=False, again=False):
-    pk, _, aid = ensure_account(show_key=show_key)
+    pk, _, aid = ensure_account()
     if again:
         last = (load_session() or {}).get("last_order")
         if last:
@@ -505,8 +504,8 @@ def cmd_close():
     time.sleep(2)
     remaining = _positions(aid)
     print(L(f"Positions now open: {len(remaining)}", f"当前剩余持仓：{len(remaining)}")
-          + (L("  (QA liquidity is thin, so a close may rest instead of filling)",
-               "  （QA 流动性较薄,平仓可能只是挂住而未成交）") if remaining else ""))
+          + (L("  (if the book is thin, a close may not fill — check again shortly)",
+               "  （盘口较薄时平仓可能未成交 —— 稍后再查看）") if remaining else ""))
     _snapshot(aid)
 
 
@@ -585,12 +584,12 @@ def _stream(sub, duration, on_msg):
         ws = websocket.create_connection(
             WS_URL, timeout=8,
             header=["User-Agent: Mozilla/5.0 (upside-upside-test)"],
-            origin="https://dev.upsidemax.xyz")
+            origin=BASE_URL)
     except Exception as e:
         print(L(f"✗ Couldn't open the live feed: {type(e).__name__}: {str(e)[:120]}",
                 f"✗ 无法打开实时行情：{type(e).__name__}: {str(e)[:120]}"))
-        print(L("  QA's stream sits behind CloudFront and may block non-browser clients. Retry in a moment.",
-                "  QA 行情在 CloudFront 后面,可能拦截非浏览器客户端。稍后重试。"))
+        print(L("  Retry in a moment; the handshake must carry a User-Agent header.",
+                "  请稍后重试；握手必须带 User-Agent 头。"))
         return 0
     n = 0
     try:
@@ -653,13 +652,13 @@ def cmd_ticker(contract=None, duration=15):
 
 
 def cmd_tour():
-    print(L("Guided tour — I'll narrate each step of a real (test) trading session.\n",
-            "导览 — 我会为一次真实（测试）交易的每一步做讲解。\n"))
+    print(L("Guided tour — I'll narrate each step of a real trading session.\n",
+            "导览 — 我会为一次真实交易的每一步做讲解。\n"))
     steps = [
         (L("1) Your identity is a wallet. No email, no password — a keypair signs every request.",
            "1) 你的身份就是一个钱包。没有邮箱密码 — 用密钥对给每个请求签名。")),
-        (L("2) Registering mints you free test USDC on the QA network so you can trade risk-free.",
-           "2) 注册会在 QA 网络给你铸造免费测试 USDC,可零风险交易。")),
+        (L("2) Registering (with an invitation code) creates your account. It starts empty — fund it to trade.",
+           "2) 用邀请码注册即创建账户。新账户余额为 0 —— 注资后才能交易。")),
         (L("3) An order says: buy/sell how much, at what price. It rests until the market meets it.",
            "3) 一笔订单表达:买/卖多少、什么价。它会挂着直到市场到价。")),
         (L("4) A fill opens a position; its value moves with the mark price (your PnL).",
@@ -673,24 +672,34 @@ def cmd_tour():
     cmd_full()
 
 
-def cmd_full(contract=None, price=None, size="1", show_key=False):
-    print(L("Running the full experience: create account → get test money → trade at market.\n",
-            "运行完整体验:创建账户 → 领测试金 → 市价下单。\n"))
-    _, _, aid = ensure_account(show_key=show_key)
-    _, mo1 = get_balance(aid)
-    if mo1 == 0:
-        print(L("\nFunds aren't tradeable yet — try `status` again in a few seconds.",
-                "\n资金暂不可交易 — 几秒后再 `status` 看看。"))
+def cmd_full(contract=None, price=None, size=None):
+    print(L("Running the full experience: account → balance → place a resting order → cancel it.\n",
+            "运行完整体验:账户 → 余额 → 挂一笔不成交的限价单 → 撤掉。\n"))
+    pk, _, aid = ensure_account()
+    if _funding_status(aid) == 0:
         return
     if contract is None:
         contract, _ = pick_contract()
     print()
-    # A market order at the current price: it fills instantly when the book has depth
-    # (→ a real position), and leaves nothing resting when it doesn't — no lowball, no cancel.
+    # A buy 20% below the mark price rests without filling, so the flow shows the
+    # order lifecycle without opening a position. Size: the minimum order value.
+    if price is None:
+        ps, _, tick, _ = _scales(contract)
+        raw = (int(_mark(contract) or 0) * 80 // 100) // tick * tick
+        price = str(Decimal(raw) / (10 ** ps))
+    if size is None:
+        c = get_contract(contract) or {}
+        raw_px = _px_to_raw(price, contract)
+        need = -(-int(configs().get("minNotionalValue", 1)) // (raw_px * int(c.get("notionalScaleMultiplier", 1)))) or 1
+        step = int(c.get("stepSize", 1))
+        size = _sz_from_raw(-(-need // step) * step, contract)
     cmd_order(side="buy", price=price, size=size, contract=contract)
-    print(L("\n✓ That's the flow — account, funds, and a trade at the current price."
-            " If it opened a position, pick `close` from the menu when you're done.",
-            "\n✓ 这就是流程 — 账户、资金、一笔现价单。若开了仓,完事后从菜单选 `close` 平仓即可。"))
+    resting = [o for o in _open_orders(aid) if o.get("contractId") == contract]
+    if resting:
+        cmd_cancel(oid=resting[-1].get("id"))
+    print(L("\n✓ That's the flow — account, balance, an order placed and cancelled."
+            " Use `order` to trade for real, `close` to exit a position.",
+            "\n✓ 这就是流程 — 账户、余额、下单再撤单。用 `order` 真正交易,`close` 平仓。"))
 
 
 def cmd_export(path=None):
@@ -701,7 +710,9 @@ def cmd_export(path=None):
     dest = Path(path) if path else (_EXAMPLES.parent / ".env")
     dest.write_text(
         f"USER_PRIVATE_KEY={sess['private_key']}\n"
-        f"USER_ACCOUNT_ID={sess['account_id']}\n")
+        f"USER_ACCOUNT_ID={sess['account_id']}\n"
+        f"UPSIDE_BASE_URL={sess.get('base_url', BASE_URL)}\n")
+    dest.chmod(0o600)
     print(L(f"✓ Wrote {dest}", f"✓ 已写入 {dest}"))
     print(L("  The examples/ scripts now load this account via common.load_user_wallet().",
             "  examples/ 脚本现在会通过 common.load_user_wallet() 使用这个账户。"))
@@ -710,9 +721,11 @@ def cmd_export(path=None):
 
 def cmd_reset():
     if SESSION.exists():
-        SESSION.unlink()
-        print(L("Done — the saved wallet was forgotten. The next flow starts fresh.",
-                "完成 — 已清除保存的钱包。下一个流程从头开始。"))
+        # Never delete a key: on Mainnet it may hold real funds. Move it aside instead.
+        backup = SESSION.with_name(f"{SESSION.stem}.{int(time.time())}.json")
+        SESSION.rename(backup)
+        print(L(f"Done — the saved wallet was moved to {backup}. The next flow starts fresh.",
+                f"完成 — 已把保存的钱包移到 {backup}。下一个流程从头开始。"))
     else:
         print(L("Nothing to reset — no saved wallet.", "无需重置 — 没有保存的钱包。"))
 
@@ -720,8 +733,8 @@ def cmd_reset():
 # ── next-step nudges ─────────────────────────────────────────
 
 _NUDGES = {
-    "register": ("place your first trade with `order`, or run `full` for the whole lifecycle.",
-                 "用 `order` 下第一笔单,或 `full` 走完整流程。"),
+    "register": ("fund the account, then place your first trade with `order` or run `full`.",
+                 "先为账户注资,再用 `order` 下第一笔单或 `full` 走完整流程。"),
     "order": ("`orders` to review it, `close`/`cancel` to exit, or `positions` to see your account.",
               "`orders` 查看,`close`/`cancel` 退出,或 `positions` 看账户。"),
     "close": ("`order` to trade again, or `status` to confirm you're flat.",
@@ -766,7 +779,7 @@ def main():
     sub = ap.add_subparsers(dest="cmd")
 
     sub.add_parser("menu")
-    p_reg = sub.add_parser("register"); p_reg.add_argument("--show-key", action="store_true")
+    sub.add_parser("register")
     sub.add_parser("status")
     sub.add_parser("positions")
     sub.add_parser("orders")
@@ -802,8 +815,7 @@ def main():
     p_full = sub.add_parser("full")
     p_full.add_argument("--contract", type=int, default=None)
     p_full.add_argument("--price", default=None)
-    p_full.add_argument("--size", default="1")
-    p_full.add_argument("--show-key", action="store_true")
+    p_full.add_argument("--size", default=None)
 
     p_export = sub.add_parser("export"); p_export.add_argument("--path", default=None)
 
@@ -813,7 +825,7 @@ def main():
     if cmd == "menu":
         cmd_menu()
     elif cmd == "register":
-        do_register(show_key=args.show_key)
+        do_register()
     elif cmd == "status":
         cmd_status()
     elif cmd == "positions":
@@ -838,7 +850,7 @@ def main():
     elif cmd == "tour":
         cmd_tour()
     elif cmd == "full":
-        cmd_full(args.contract, args.price, args.size, show_key=args.show_key)
+        cmd_full(args.contract, args.price, args.size)
     elif cmd == "export":
         cmd_export(args.path)
 
@@ -852,6 +864,6 @@ if __name__ == "__main__":
     except KeyboardInterrupt:
         print(L("\n(stopped)", "\n(已停止)"))
     except requests.exceptions.RequestException as e:
-        print(L(f"\n✗ Couldn't reach the QA server at {BASE_URL}. Check your connection and retry.",
-                f"\n✗ 无法连接 QA 服务器 {BASE_URL}。请检查网络后重试。") + f"  ({type(e).__name__})")
+        print(L(f"\n✗ Couldn't reach {BASE_URL}. Check your connection and retry.",
+                f"\n✗ 无法连接 {BASE_URL}。请检查网络后重试。") + f"  ({type(e).__name__})")
         sys.exit(1)
