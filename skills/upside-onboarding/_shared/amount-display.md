@@ -1,6 +1,6 @@
 # Amount Display Rules
 
-> Shared across all Upside skills. Apply these rules any time you render numeric amounts, addresses, or IDs to the user.
+> Shared across all UpsideMAX skills. Apply these rules any time you render numeric amounts, addresses, or IDs to the user.
 
 ## Settle-coin amounts (auto-detected via `/info configs`)
 

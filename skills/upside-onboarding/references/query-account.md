@@ -105,7 +105,7 @@ Field-by-field:
 
 Ready to trade:
 ```
-✓ Account Balance (Upside {Mainnet | Devnet})
+✓ Account Balance (UpsideMAX {Mainnet | Devnet})
 
   Account ID:              {aid}
   DexLedger (mo=0):        {usdt_mo0_formatted}
@@ -136,7 +136,7 @@ Empty:
 
   Account ID:              {aid}
   depositNonce:            {dn}
-  Suggested:               {if dn==0: "fund the account (contact the Upside team for how)" | "check with support"}
+  Suggested:               {if dn==0: Mainnet → "deposit funds into the account"; Devnet → "contact the UpsideMAX team for Devnet funds" | "check with support"}
 ```
 
 ## Confirming Response

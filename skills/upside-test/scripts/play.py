@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
 """
-play.py — Upside one-command experience launcher.
+play.py — UpsideMAX one-command experience launcher.
 
 A thin orchestration layer over examples/common.py. Each subcommand runs one
 self-contained flow end-to-end and prints a friendly, plain-language summary.
 Output is written for a person trying the product, not a debug log.
 
-Targets Mainnet (https://upsidemax.xyz) by default — real funds. Set
-UPSIDE_BASE_URL=https://dev.upsidemax.xyz to use Devnet. Registration needs an
-invitation code (UPSIDE_INVITE_CODE) on both; a new account starts with a zero
-balance and must be funded before it can trade.
+Targets Devnet (https://dev.upsidemax.xyz, chainId 9767) by default. Set
+UPSIDE_BASE_URL=https://upsidemax.xyz to run it on Mainnet (real funds). The
+other skills and examples default to Mainnet; this launcher alone defaults to
+Devnet. Registration needs an invitation code (UPSIDE_INVITE_CODE) on both; a
+new account starts with a zero balance and must be funded before it can trade.
 
 A session wallet is persisted per environment to ~/.upside_test.<host>.json
 (mode 600) so flows chain together: run `register` once, then `order` /
@@ -34,6 +35,10 @@ from pathlib import Path
 # so the examples dir must be on sys.path).
 _EXAMPLES = Path(__file__).resolve().parents[3] / "examples"
 sys.path.insert(0, str(_EXAMPLES))
+
+# The test drive runs on Devnet unless UPSIDE_BASE_URL says otherwise. Set before
+# importing common, which reads it once.
+os.environ.setdefault("UPSIDE_BASE_URL", "https://dev.upsidemax.xyz")
 
 _DEPS = ["eth-account", "eth-keys", "eth-utils", "eth-hash[pycryptodome]", "requests", "websocket-client"]
 
@@ -209,8 +214,8 @@ def _sz_from_raw(raw, cid):
 
 def do_register():
     if not INVITE_CODE:
-        print(L("✗ No invitation code set. Request one from the Upside team, then set it and retry:",
-                "✗ 未设置邀请码。请向 Upside 团队索取,设置后重试:"))
+        print(L("✗ No invitation code set. Request one from the UpsideMAX team, then set it and retry:",
+                "✗ 未设置邀请码。请向 UpsideMAX 团队索取,设置后重试:"))
         print("    export UPSIDE_INVITE_CODE=<your-code>")
         sys.exit(1)
     pk, addr = new_wallet()
@@ -240,7 +245,8 @@ def _funding_status(aid):
                 "（enrollUserToMarketOwner + lockCollateral）。"))
     else:
         print(L("⚠  " + FUNDING_HINT,
-                "⚠  新注册账户余额为 0。交易前请先为账户注资（注资方式请联系 Upside 团队），然后重试。"))
+                "⚠  账户余额为 0。" + ("请先向账户充值，然后重试。" if _HOST == "upsidemax.xyz"
+                                      else "Devnet 资金获取方式请联系 UpsideMAX 团队，然后重试。")))
     return mo1
 
 
@@ -312,9 +318,9 @@ _MENU = [
 def cmd_menu():
     sess = load_session()
     print("=" * 62)
-    env_en, env_zh = (("Mainnet — real funds", "主网 —— 真实资金") if _HOST == "upsidemax.xyz"
-                      else (f"{_HOST}", f"{_HOST}"))
-    print(L(f"Upside — Test Drive   ({env_en})", f"Upside — 体验场   （{env_zh}）"))
+    env_en, env_zh = {"upsidemax.xyz": ("Mainnet — real funds", "主网 —— 真实资金"),
+                      "dev.upsidemax.xyz": ("Devnet", "Devnet")}.get(_HOST, (_HOST, _HOST))
+    print(L(f"UpsideMAX — Test Drive   ({env_en})", f"UpsideMAX — 体验场   （{env_zh}）"))
     print("=" * 62)
     print(L("A decentralized perpetual-futures exchange — try the whole flow in single",
             "去中心化永续合约交易所 —— 用编号一步步体验。"))
@@ -353,8 +359,8 @@ _CONCEPTS = {
              "Collateral locked to back a position. Cross margin shares one pool; isolated margin fences off a fixed amount per position.",
              "为持仓抵押的资金。全仓共用一个池;逐仓给每个仓位单独隔离固定金额。"),
     "funding": ("Funding", "资金费率",
-             "Periodic payments between longs and shorts that keep the perp price near spot. Paid roughly hourly on Upside.",
-             "多空之间的周期性付费,让永续价格贴近现货。Upside 大约每小时结算一次。"),
+             "Periodic payments between longs and shorts that keep the perp price near spot. Paid roughly hourly on UpsideMAX.",
+             "多空之间的周期性付费,让永续价格贴近现货。UpsideMAX 大约每小时结算一次。"),
     "mark": ("Mark price", "标记价格",
              "A manipulation-resistant reference price used for PnL and liquidations — not the last trade price.",
              "用于计算盈亏和清算的抗操纵参考价 — 不是最新成交价。"),
@@ -657,8 +663,9 @@ def cmd_tour():
     steps = [
         (L("1) Your identity is a wallet. No email, no password — a keypair signs every request.",
            "1) 你的身份就是一个钱包。没有邮箱密码 — 用密钥对给每个请求签名。")),
-        (L("2) Registering (with an invitation code) creates your account. It starts empty — fund it to trade.",
-           "2) 用邀请码注册即创建账户。新账户余额为 0 —— 注资后才能交易。")),
+        (L("2) Registering (with an invitation code) creates your account. It starts empty — fund it to trade"
+           " (Devnet: ask the UpsideMAX team; Mainnet: deposit).",
+           "2) 用邀请码注册即创建账户。新账户余额为 0 —— 注资后才能交易（Devnet 联系 UpsideMAX 团队；主网充值）。")),
         (L("3) An order says: buy/sell how much, at what price. It rests until the market meets it.",
            "3) 一笔订单表达:买/卖多少、什么价。它会挂着直到市场到价。")),
         (L("4) A fill opens a position; its value moves with the mark price (your PnL).",
@@ -775,7 +782,7 @@ def main():
             argv[0] = _MENU[n - 1][0]
     sys.argv = [sys.argv[0]] + argv
 
-    ap = argparse.ArgumentParser(description="Upside experience test drive")
+    ap = argparse.ArgumentParser(description="UpsideMAX experience test drive")
     sub = ap.add_subparsers(dest="cmd")
 
     sub.add_parser("menu")

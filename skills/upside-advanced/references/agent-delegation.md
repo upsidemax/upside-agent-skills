@@ -13,7 +13,7 @@ Approve a "bot" address that can trade under the master account without holding 
 3. **Show Confirming Response**. See [Confirming Response](#confirming-response). Do NOT skip.
 4. **Run**:
    ```bash
-   python3 examples/08_agent_delegation.py <master_priv> <agent_priv> [agentName] [validUntil_ms]
+   python3 examples/08_agent_delegation.py [agentName] [validUntil_ms]   # keys from .env
    ```
 5. **Verify** via `userAgents` (see [List active agents](#list-active-agents)).
 6. **Render the Agent Granted template**.
@@ -115,7 +115,7 @@ Response:
 ### Confirming Response — grant
 
 ```
-⚠  About to GRANT trading authority on Upside ({Mainnet | Devnet}).
+⚠  About to GRANT trading authority on UpsideMAX ({Mainnet | Devnet}).
 
   Master:       {master_aid} — {master_addr}
   Agent addr:   {agent_addr}
@@ -131,7 +131,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Agent Granted
 
 ```
-✓ Agent approved on Upside ({Mainnet | Devnet})
+✓ Agent approved on UpsideMAX ({Mainnet | Devnet})
 
   Master:      {master_aid}
   Agent:       {agent_addr}
@@ -146,7 +146,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Confirming Response — revoke
 
 ```
-⚠  About to REVOKE agent on Upside ({Mainnet | Devnet}).
+⚠  About to REVOKE agent on UpsideMAX ({Mainnet | Devnet}).
 
   Master:       {master_aid} — {master_addr}
   Agent addr:   {agent_addr}
@@ -162,7 +162,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### Agent Revoked
 
 ```
-✓ Agent revoked on Upside ({Mainnet | Devnet})
+✓ Agent revoked on UpsideMAX ({Mainnet | Devnet})
 
   Master:  {master_aid}
   Agent:   {agent_addr}

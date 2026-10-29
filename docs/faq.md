@@ -26,10 +26,10 @@ On Windows, use Git Bash or WSL. Or run the pip commands manually.
 ### Timeout hitting `https://upsidemax.xyz/info` (or `https://dev.upsidemax.xyz/info`)
 The endpoint may be temporarily unavailable, or your network may be blocking the request.
 1. Run `curl -v -X POST https://upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"configs"}'` (Devnet: `https://dev.upsidemax.xyz/info`) to see what fails.
-2. Retry shortly; if it persists, contact the Upside team.
+2. Retry shortly; if it persists, contact the UpsideMAX team.
 
 ### `POST /info` returns HTML (not JSON)
-The endpoint is not currently proxying `/info`. Retry shortly; if it persists, contact the Upside team.
+The endpoint is not currently proxying `/info`. Retry shortly; if it persists, contact the UpsideMAX team.
 
 ### WebSocket connects but no messages
 You are using an unsupported subscription format. The server uses a JSON subscribe protocol with `{"method":"subscribe","subscription":{...}}` frames. Change:
@@ -47,7 +47,7 @@ You put `inviteCode` inside `action`. It belongs at **envelope level**:
 ✗ {"action":{"type":"registerAccount","address":"0x…","inviteCode":"<invite-code>"}, …}
 ✓ {"action":{"type":"registerAccount","address":"0x…"}, "inviteCode":"<invite-code>", …}
 ```
-Registration requires an invitation code on Mainnet and Devnet. Request one from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable.
+Registration requires an invitation code on Mainnet and Devnet. Request one from the UpsideMAX team and set it via the `UPSIDE_INVITE_CODE` environment variable.
 
 ### `http 409 ACCOUNT_ALREADY_EXISTS`
 Not an error — you've already registered. Parse the `accountId` from the message:
@@ -63,8 +63,9 @@ The signature was made by a different private key than the `action.address`. The
 
 ### `depositNonce = 0` and no funds after registering
 Expected. A newly registered account has a zero balance on every environment —
-nothing is credited automatically. Fund the account before trading (contact the
-Upside team for how). Registering another wallet does not help.
+nothing is credited automatically. Fund the account before trading: on Mainnet,
+deposit funds into the account; on Devnet, contact the UpsideMAX team for Devnet funds.
+Registering another wallet does not help.
 
 ### Balance shows `null` for every field
 You are querying with `marketOwnerId` instead of `marketDeployerId`. The correct field is `marketDeployerId`; using `marketOwnerId` returns null fields rather than an error.

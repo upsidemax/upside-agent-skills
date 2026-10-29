@@ -25,7 +25,7 @@ A Mainnet key controls real funds, so:
 
 ## Invitation code
 
-Registration requires an invitation code on both Mainnet and Devnet — request one from the Upside team and provide it via the `UPSIDE_INVITE_CODE` environment variable. Invite codes are single-use.
+Registration requires an invitation code on both Mainnet and Devnet — request one from the UpsideMAX team and provide it via the `UPSIDE_INVITE_CODE` environment variable. Invite codes are single-use.
 
 ## Reporting a vulnerability
 

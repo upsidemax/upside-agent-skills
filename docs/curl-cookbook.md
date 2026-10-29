@@ -185,7 +185,7 @@ ADDR=$(python3 -c "from eth_keys import keys; print(keys.PrivateKey(bytes.fromhe
 echo "address: $ADDR   (private key in ./upside.key — back it up)"
 ```
 
-Step 2 — register (with envelope-level invitation code, required on Mainnet and Devnet). Request one from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable:
+Step 2 — register (with envelope-level invitation code, required on Mainnet and Devnet). Request one from the UpsideMAX team and set it via the `UPSIDE_INVITE_CODE` environment variable:
 ```bash
 ENV=$(sign_envelope "$PRIVKEY" "{\"type\":\"registerAccount\",\"address\":\"$ADDR\"}" "$UPSIDE_INVITE_CODE")
 curl -sS -X POST $BASE/exchange \
@@ -213,7 +213,8 @@ export AID=5   # from the response
 ### Check the balance
 
 A new account starts with a **zero balance** on every environment — fund it before
-trading (contact the Upside team for how). Check once:
+trading. Mainnet: deposit funds into the account. Devnet: contact the UpsideMAX team for
+Devnet funds. Check once:
 ```bash
 BAL=$(curl -sS -X POST $BASE/info \
   -H 'Content-Type: application/json' \
@@ -404,7 +405,7 @@ ADDR=$(python3 -c "from eth_keys import keys; print(keys.PrivateKey(bytes.fromhe
 echo "  address: $ADDR"
 
 echo "=== 2. Register ==="
-# Set UPSIDE_INVITE_CODE to the invitation code obtained from the Upside team.
+# Set UPSIDE_INVITE_CODE to the invitation code obtained from the UpsideMAX team.
 ENV=$(sign_envelope "$PRIVKEY" "{\"type\":\"registerAccount\",\"address\":\"$ADDR\"}" "$UPSIDE_INVITE_CODE")
 RESP=$(curl -sS -X POST $BASE/exchange -H 'Content-Type: application/json' -d "$ENV")
 echo "  $RESP"
@@ -417,7 +418,7 @@ BAL=$(curl -sS -X POST $BASE/info -H 'Content-Type: application/json' \
   | python3 -c "import json,sys; print(json.load(sys.stdin).get('crossEquity','0'))")
 echo "  MO=1 crossEquity=$BAL"
 if [ "$BAL" = "0" ] || [ "$BAL" = "null" ]; then
-  echo "  A new account starts with a zero balance. Fund it (contact the Upside team), then re-run."
+  echo "  Zero balance. Mainnet: deposit funds into the account. Devnet: contact the UpsideMAX team. Then re-run."
   exit 0
 fi
 

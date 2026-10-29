@@ -1,6 +1,6 @@
 # WebSocket Protocol
 
-WebSocket wire format. The Upside WebSocket uses a JSON subscribe protocol: the client sends `{"method":"subscribe","subscription":{"type":"<channel>", …}}`; the server replies on `channel: "subscriptionResponse"` and then pushes updates on `channel: "<name>"`. The `{msg:"Subscribe", channels:[…]}` form is not supported and returns no data.
+WebSocket wire format. The UpsideMAX WebSocket uses a JSON subscribe protocol: the client sends `{"method":"subscribe","subscription":{"type":"<channel>", …}}`; the server replies on `channel: "subscriptionResponse"` and then pushes updates on `channel: "<name>"`. The `{msg:"Subscribe", channels:[…]}` form is not supported and returns no data.
 
 ## Workflow
 

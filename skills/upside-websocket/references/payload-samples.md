@@ -1,6 +1,6 @@
 # Payload Samples
 
-Real messages captured from the Upside WebSocket (`/ws`). Field names & shapes current as of 2026-07-22.
+Real messages captured from the UpsideMAX WebSocket (`/ws`). Field names & shapes current as of 2026-07-22.
 
 ## Workflow
 

@@ -6,12 +6,15 @@ balances) — it adds no new protocol logic. Run from the repo root.
 
 ## Session wallet
 
+The launcher defaults to **Devnet** (`https://dev.upsidemax.xyz`); set
+`UPSIDE_BASE_URL=https://upsidemax.xyz` for Mainnet.
+
 State lives in `~/.upside_test.<host>.json` — one file per environment
-(`~/.upside_test.upsidemax.xyz.json` for Mainnet,
-`~/.upside_test.dev.upsidemax.xyz.json` for Devnet), mode 600:
+(`~/.upside_test.dev.upsidemax.xyz.json` for Devnet,
+`~/.upside_test.upsidemax.xyz.json` for Mainnet), mode 600:
 
 ```json
-{ "private_key": "0x…", "address": "0x…", "account_id": "284", "base_url": "https://upsidemax.xyz" }
+{ "private_key": "0x…", "address": "0x…", "account_id": "284", "base_url": "https://dev.upsidemax.xyz" }
 ```
 
 - Written by `register` / `order` / `full` (any flow that needs an account).
@@ -31,7 +34,7 @@ A global `--lang en|zh` (or env `UPSIDE_LANG`) switches the output language.
 | --- | --- | --- | --- |
 | `menu` | — | Flow list + session summary (orders/positions) | menu |
 | `full` | `--contract` `--price` `--size` | account → balance (stops if zero) → limit buy 20% below mark at the minimum order value → cancel it | `✓ Order submitted…` + `✓ Cancelled…` |
-| `register` | — | new wallet → `registerAccount` → one balance check (zero → "fund the account first") | `🎉 Account created` + balance line |
+| `register` | — | new wallet → `registerAccount` → one balance check (zero → Devnet: contact the team; Mainnet: deposit) | `🎉 Account created` + balance line |
 | `order` | `--side buy` `--price <mark>` `--size 1` `--contract <auto>` `--tif Gtc` `--show-code` `--again` | auto-registers, places a limit order, detects fill vs resting | `✓ Order placed…` → `🎯 filled` / resting id |
 | `close` | — | reduce-only opposite order to flatten each open position | `✓ Sent close…` + remaining count |
 | `status` | — | Balance + positions | balance + positions |
@@ -56,7 +59,8 @@ A global `--lang en|zh` (or env `UPSIDE_LANG`) switches the output language.
 - **`priceReady=false`.** The contract has no usable price yet; `full` stops and
   asks for another contract.
 - **Zero balance.** A new account is empty on every environment. The script stops
-  with "fund the account first" — no polling, no re-registering.
+  — Devnet: contact the UpsideMAX team for Devnet funds; Mainnet: deposit funds into
+  the account. No polling, no re-registering.
 - **Funding layer.** Only MO=1 cross collateral can trade. Funds at mo=0 (chain
   level) need an `enrollUserToMarketOwner` + `lockCollateral` migration — route to
   `upside-onboarding`.

@@ -1,8 +1,8 @@
 # Confirming Response
 
-> Shared across all Upside skills. Every state-changing action MUST pass through this gate before executing.
+> Shared across all UpsideMAX skills. Every state-changing action MUST pass through this gate before executing.
 
-State-changing actions on Upside can move funds, create/cancel orders, or grant/revoke permissions. Once submitted they are hard or impossible to reverse. The agent MUST get explicit user confirmation before running the corresponding script.
+State-changing actions on UpsideMAX can move funds, create/cancel orders, or grant/revoke permissions. Once submitted they are hard or impossible to reverse. The agent MUST get explicit user confirmation before running the corresponding script.
 
 ## When to confirm — ALWAYS
 
@@ -30,7 +30,7 @@ Skip the gate for:
 Render **verbatim** before running any state-changing script (substitute `{…}` placeholders):
 
 ```
-⚠  About to {operation summary} on Upside ({Mainnet — real funds | Devnet}).
+⚠  About to {operation summary} on UpsideMAX ({Mainnet — real funds | Devnet}).
 
   Account:   {accountId} — {address_short}
   Details:   {key details, one per line}
@@ -43,7 +43,7 @@ Reply "yes" to proceed, anything else to cancel.
 Concrete example — place order:
 
 ```
-⚠  About to PLACE ORDER on Upside (Mainnet — real funds).
+⚠  About to PLACE ORDER on UpsideMAX (Mainnet — real funds).
 
   Account:   5 — 0x001cf1…5ec52
   Details:   Contract 1  (BTC-<settle_coin_name>, e.g. BTC-USDC)

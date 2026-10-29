@@ -1,11 +1,11 @@
 ---
 name: upside-test
-description: "Upside guided experience — the ONE entry skill that lets a user try the product end-to-end in single commands, no setup. When it fires, show the flow menu, then run one wrapped flow per request with sensible defaults (don't interrogate the user for parameters). Trigger when the user says: try it / let me try / demo / show me / walk me through / experience / play with / give it a go / quick demo / one-click / take me through / I just want to see it work / can I test / 体验 / 试用 / 试一下 / 演示 / 走一遍 / 带我用一下 / 快速体验 / 一键体验 / 我想试试 / 直接跑一下 / 能演示吗. Wraps register, balance, order, positions, orders, cancel, and live WebSocket into single commands (Mainnet by default, Devnet optional); routes to upside-onboarding / upside-trading / upside-websocket / upside-advanced for depth."
+description: "UpsideMAX guided experience — the ONE entry skill that lets a user try the product end-to-end in single commands, no setup. When it fires, show the flow menu, then run one wrapped flow per request with sensible defaults (don't interrogate the user for parameters). Trigger when the user says: try it / let me try / demo / show me / walk me through / experience / play with / give it a go / quick demo / one-click / take me through / I just want to see it work / can I test / 体验 / 试用 / 试一下 / 演示 / 走一遍 / 带我用一下 / 快速体验 / 一键体验 / 我想试试 / 直接跑一下 / 能演示吗. Wraps register, balance, order, positions, orders, cancel, and live WebSocket into single commands (Devnet by default, Mainnet optional); routes to upside-onboarding / upside-trading / upside-websocket / upside-advanced for depth."
 license: MIT
 metadata:
   author: upside-agent-skills
   version: "0.1.0"
-  homepage: "https://upsidemax.xyz"
+  homepage: "https://dev.upsidemax.xyz"
   agent:
     requires:
       python: ">=3.9"
@@ -17,12 +17,13 @@ metadata:
         label: "Install Python dependencies"
 ---
 
-# Upside — Test Drive
+# UpsideMAX — Test Drive
 
-The fastest way to **experience Upside**. Every flow is one command that runs
-end-to-end and prints a friendly summary. The default environment is **Mainnet**
-(`https://upsidemax.xyz`) — **real funds**. Set
-`UPSIDE_BASE_URL=https://dev.upsidemax.xyz` to use Devnet instead. No private keys
+The fastest way to **experience UpsideMAX**. Every flow is one command that runs
+end-to-end and prints a friendly summary. The test drive runs on **Devnet**
+(`https://dev.upsidemax.xyz`, chainId 9767) by default. Set
+`UPSIDE_BASE_URL=https://upsidemax.xyz` to run it on Mainnet (real funds) instead —
+the other skills and the `examples/` scripts default to Mainnet. No private keys
 are pasted into chat — wallets are generated locally and kept in a per-environment
 session file (`~/.upside_test.<host>.json`, mode 600) so flows chain together.
 
@@ -57,15 +58,15 @@ brevity — expand it to the absolute path above.
    **register a new account** (`register`, or `full` / `order` / `positions` when
    there is **no** saved session yet) requires an invitation code, on Mainnet and
    Devnet. **Before running it, if the user hasn't already given you one, STOP and
-   ask them to enter their invitation code** (they get one from the Upside team);
+   ask them to enter their invitation code** (they get one from the UpsideMAX team);
    wait for their reply. Then run the flow with the code prefixed:
    `UPSIDE_INVITE_CODE=<their-code> python3 "${CLAUDE_PLUGIN_ROOT}/skills/upside-test/scripts/play.py" <flow>`.
    Never register without a code the user gave you. (If a session already exists,
    flows reuse it — no code needed, so don't ask.)
 3. **A new account has a zero balance.** After registering, the launcher checks the
-   balance once and, if it is zero, says the account must be funded first (the user
-   contacts the Upside team for how). Relay that and stop — do not retry, poll, or
-   re-register.
+   balance once and, if it is zero, stops: on Devnet the user contacts the UpsideMAX
+   team for Devnet funds; on Mainnet the user deposits funds into the account.
+   Relay that and stop — do not retry, poll, or re-register.
 4. **Run one command per request, with defaults.** Do **not** interrogate the
    user for price/size/contract. Only pass `--flags` if they explicitly ask to
    customize (e.g. "sell instead of buy", "size 5"). On Mainnet, never place an
@@ -113,10 +114,11 @@ opening a position.
 
 ## Things to tell the user (so results aren't confusing)
 
-- **Which environment.** Mainnet (`https://upsidemax.xyz`) is real funds; Devnet
-  (`https://dev.upsidemax.xyz`) is for testing. The menu header shows which one.
-- **A new account is empty.** There is no automatic credit on any environment; the
-  account has to be funded before it can trade.
+- **Which environment.** The test drive defaults to Devnet
+  (`https://dev.upsidemax.xyz`), a test environment; Mainnet (`https://upsidemax.xyz`)
+  is real funds. The menu header shows which one.
+- **A new account is empty.** There is no automatic credit on any environment.
+  Devnet funds: contact the UpsideMAX team. Mainnet: deposit funds into the account.
 - **Orders may be accepted asynchronously.** A placed order can return
   `status: "accepted"` with `{ "count": 1 }` — the order `id` is **not** in that
   response; the script reads it back from `userOrders`. This is expected.
@@ -141,7 +143,7 @@ A per-flow reference (defaults, flags, output shape) is in
 
 - **Invitation code required.** Registration needs an invitation code on Mainnet
   and Devnet. If a flow reports that no code is set, ask the user for theirs (they
-  request one from the Upside team), then pass it inline on the command — do
+  request one from the UpsideMAX team), then pass it inline on the command — do
   **not** invent a code:
   `UPSIDE_INVITE_CODE=<code> python3 "${CLAUDE_PLUGIN_ROOT}/skills/upside-test/scripts/play.py" full`
 - **No manual pre-flight.** The launcher self-installs its Python dependencies on
@@ -149,5 +151,5 @@ A per-flow reference (defaults, flags, output shape) is in
   `curl` the API before running a flow.
 - **Never** ask the user to paste a private key. The script generates its own and
   never prints it.
-- The session file holds a real key on Mainnet. Never read it into the
+- On Mainnet the session file holds a key that controls real funds. Never read it into the
   conversation; tell the user where it is so they can back it up.

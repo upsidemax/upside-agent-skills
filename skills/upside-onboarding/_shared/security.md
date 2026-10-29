@@ -1,6 +1,6 @@
 # Security & Global Notes
 
-> Shared across all Upside skills. Applies to every action, read or write.
+> Shared across all UpsideMAX skills. Applies to every action, read or write.
 
 ## Credential protection
 

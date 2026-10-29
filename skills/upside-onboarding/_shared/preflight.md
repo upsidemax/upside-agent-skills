@@ -26,8 +26,8 @@ curl -s -m 5 -X POST https://upsidemax.xyz/info \
 Expected: JSON starting with `{"type":"marketState","asset":"1",…}`.
 
 Failure modes:
-- **Timeout / connection refused** → retry shortly; if it persists, contact the Upside team.
-- **HTML response** → the request did not reach the API. Check the URL and that it is a `POST`; retry shortly; if it persists, contact the Upside team.
+- **Timeout / connection refused** → retry shortly; if it persists, contact the UpsideMAX team.
+- **HTML response** → the request did not reach the API. Check the URL and that it is a `POST`; retry shortly; if it persists, contact the UpsideMAX team.
 - **HTTP 5xx** → backend unavailable; report and wait.
 
 ## 3. Contract exists
@@ -50,4 +50,4 @@ Registration requires an invitation code on Mainnet and Devnet, supplied at enve
 [ -n "$UPSIDE_INVITE_CODE" ] && echo "invite code set" || echo "set UPSIDE_INVITE_CODE first"
 ```
 
-Without it, `registerAccount` returns `http 400 "inviteCode required"`. Request a code from the Upside team. Codes are single-use, so do not spend one on a probe registration.
+Without it, `registerAccount` returns `http 400 "inviteCode required"`. Request a code from the UpsideMAX team. Codes are single-use, so do not spend one on a probe registration.

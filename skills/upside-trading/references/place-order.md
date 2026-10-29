@@ -11,7 +11,7 @@ Place a limit / IOC / FOK / post-only order. Fire-and-forget: HTTP `202` fast, m
 2. **Show Confirming Response**. See [Confirming Response](#confirming-response). Do NOT skip.
 3. **Run**:
    ```bash
-   python3 examples/05_place_order.py <priv_key> <contractId> <price> <size> <buy|sell>
+   python3 examples/05_place_order.py <contractId> <price> <size> <buy|sell>   # key from .env
    ```
 4. **Wait 2 seconds** then verify entry via [user-orders](user-orders.md).
 5. **Render the Order Placed template**.
@@ -160,7 +160,7 @@ Detection: after 2-3 s, `userOrders` still returns 0 for that account/contract A
 Render **verbatim** per [_shared/confirming-response.md](../../upside-onboarding/_shared/confirming-response.md):
 
 ```
-⚠  About to PLACE ORDER on Upside ({Mainnet | Devnet}).
+⚠  About to PLACE ORDER on UpsideMAX ({Mainnet | Devnet}).
 
   Account:   {aid} — {addr_short}
   Contract:  {contractId} ({symbol_if_known})
@@ -182,7 +182,7 @@ Reply "yes" to proceed, anything else to cancel.
 After confirmation + successful submit + verified in `userOrders`:
 
 ```
-✓ Order placed on Upside ({Mainnet | Devnet})
+✓ Order placed on UpsideMAX ({Mainnet | Devnet})
 
   Order ID:   {oid}
   Contract:   {contractId}
@@ -192,7 +192,7 @@ After confirmation + successful submit + verified in `userOrders`:
   Status:     {Open|PartiallyFilled|Filled}
   cloid:      {cloid_or_-}
 
-  To cancel:  python3 examples/06_cancel_order.py cancel {priv} {contractId} {oid}
+  To cancel:  python3 examples/06_cancel_order.py cancel {contractId} {oid}
 ```
 
 If `userOrders` shows 0 after 3 s despite `http 202`:

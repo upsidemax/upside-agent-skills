@@ -92,7 +92,7 @@ oids = [int(o["id"]) for o in r["orders"]]
 
 Populated:
 ```
-📋 Open Orders — Account {aid} (Upside {Mainnet | Devnet})
+📋 Open Orders — Account {aid} (UpsideMAX {Mainnet | Devnet})
 
   ID       Contract  Side  Price          Size    Status    cloid
   ─────────────────────────────────────────────────────────────────
@@ -103,8 +103,8 @@ Populated:
   {n_conditional} conditional (TP/SL) orders included above.
   {n_open} open, {n_filled} filled, {n_cancelled} cancelled.
 
-  Cancel one:   python3 examples/06_cancel_order.py cancel <priv> <contractId> <id>
-  Cancel all:   python3 examples/06_cancel_order.py cancel-all <priv> <contractId>
+  Cancel one:   python3 examples/06_cancel_order.py cancel <contractId> <id>
+  Cancel all:   python3 examples/06_cancel_order.py cancel-all <contractId>
 ```
 
 Empty:

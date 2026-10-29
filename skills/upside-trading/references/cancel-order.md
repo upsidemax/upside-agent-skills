@@ -9,7 +9,7 @@ Three variants. All fire-and-forget (`http 202`).
 1. **Skip Confirming gate** if the user explicitly named the oid (they know what they're cancelling).
 2. **Run**:
    ```bash
-   python3 examples/06_cancel_order.py cancel <priv_key> <contractId> <oid>
+   python3 examples/06_cancel_order.py cancel <contractId> <oid>   # key from .env
    ```
 3. **Wait 1-2 s** then verify via [user-orders](user-orders.md).
 
@@ -17,7 +17,7 @@ Three variants. All fire-and-forget (`http 202`).
 
 Same as above but skip the oid lookup:
 ```bash
-python3 examples/06_cancel_order.py cancel-by-cloid <priv_key> <contractId> <cloid>
+python3 examples/06_cancel_order.py cancel-by-cloid <contractId> <cloid>
 ```
 (Not in the example script — action shape below.)
 
@@ -27,7 +27,7 @@ python3 examples/06_cancel_order.py cancel-by-cloid <priv_key> <contractId> <clo
 2. Show which orders will be cancelled (list them first via [user-orders](user-orders.md)).
 3. **Run**:
    ```bash
-   python3 examples/06_cancel_order.py cancel-all <priv_key> <contractId>
+   python3 examples/06_cancel_order.py cancel-all <contractId>
    ```
 
 ## Action shapes
@@ -77,7 +77,7 @@ For `cancelAll`: the response tells you exactly how many were cancelled (closed-
 Render **verbatim** per [_shared/confirming-response.md](../../upside-onboarding/_shared/confirming-response.md):
 
 ```
-⚠  About to CANCEL ALL orders on Upside ({Mainnet | Devnet}).
+⚠  About to CANCEL ALL orders on UpsideMAX ({Mainnet | Devnet}).
 
   Account:      {aid} — {addr_short}
   Contract:     {contractId} ({symbol_if_known})
@@ -90,7 +90,7 @@ Reply "yes" to proceed, anything else to cancel.
 
 ### Cancel Confirmed
 ```
-✓ Cancelled on Upside ({Mainnet | Devnet})
+✓ Cancelled on UpsideMAX ({Mainnet | Devnet})
 
   Account:  {aid}
   Contract: {contractId}
@@ -99,7 +99,7 @@ Reply "yes" to proceed, anything else to cancel.
 
 ### CancelAll result
 ```
-✓ CancelAll executed on Upside ({Mainnet | Devnet})
+✓ CancelAll executed on UpsideMAX ({Mainnet | Devnet})
 
   Account:              {aid}
   Contract:             {contractId}

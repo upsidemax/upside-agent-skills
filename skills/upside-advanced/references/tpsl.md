@@ -13,7 +13,7 @@ Automated take-profit and stop-loss for an open position. Backed by conditional 
 3. **Show Confirming Response**. See [Confirming Response](#confirming-response).
 4. **Run**:
    ```bash
-   python3 examples/09_tpsl.py <priv_key> <contractId> <tpPrice> [slPrice]
+   python3 examples/09_tpsl.py <contractId> <tpPrice> [slPrice]   # key from .env
    ```
 5. **Verify** via `userOrders` — look for entries with `isConditional: true, status: "Untriggered"`.
 6. **Render the TP/SL Attached template**.
@@ -24,7 +24,7 @@ Automated take-profit and stop-loss for an open position. Backed by conditional 
 2. **Show Confirming Response**.
 3. **Run** cancelTpSl (removes both TP and SL for the position side):
    ```bash
-   python3 examples/09_tpsl.py cancel <priv_key> <contractId>
+   python3 examples/09_tpsl.py cancel <contractId>
    ```
    Or cancel a specific one via `cancel` with the `oid`.
 4. **Render the TP/SL Cancelled template**.
@@ -154,7 +154,7 @@ Or explicit cancel:
 ### Confirming Response — attach
 
 ```
-⚠  About to ATTACH TP/SL on Upside ({Mainnet | Devnet}).
+⚠  About to ATTACH TP/SL on UpsideMAX ({Mainnet | Devnet}).
 
   Account:       {aid} — {addr_short}
   Contract:      {contractId} ({symbol_if_known})
@@ -173,20 +173,20 @@ Reply "yes" to proceed, anything else to cancel.
 ### TP/SL Attached
 
 ```
-✓ TP/SL attached on Upside ({Mainnet | Devnet})
+✓ TP/SL attached on UpsideMAX ({Mainnet | Devnet})
 
   Account:      {aid}
   Contract:     {contractId}
   TP order:     oid={tpOrderId}  trigger={tp_formatted}  ({trigger_type})
   SL order:     oid={slOrderId}  trigger={sl_formatted}  ({trigger_type})
 
-  Cancel:       python3 examples/09_tpsl.py cancel <priv> {contractId}
+  Cancel:       python3 examples/09_tpsl.py cancel {contractId}
 ```
 
 ### Confirming Response — cancel
 
 ```
-⚠  About to CANCEL TP/SL on Upside ({Mainnet | Devnet}).
+⚠  About to CANCEL TP/SL on UpsideMAX ({Mainnet | Devnet}).
 
   Account:       {aid}
   Contract:      {contractId}
@@ -202,7 +202,7 @@ Reply "yes" to proceed, anything else to cancel.
 ### TP/SL Cancelled
 
 ```
-✓ TP/SL cancelled on Upside ({Mainnet | Devnet})
+✓ TP/SL cancelled on UpsideMAX ({Mainnet | Devnet})
 
   Account:         {aid}
   Contract:        {contractId}

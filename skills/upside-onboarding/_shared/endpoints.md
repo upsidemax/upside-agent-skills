@@ -40,4 +40,4 @@ curl -s -m 5 -X POST https://upsidemax.xyz/info \
   -d '{"type":"marketState","asset":"1"}'
 ```
 
-Expected: JSON with `type: "marketState"`. If you get an HTML page, the request did not reach the API — check the URL and method (`POST`), retry shortly, and contact the Upside team if it persists.
+Expected: JSON with `type: "marketState"`. If you get an HTML page, the request did not reach the API — check the URL and method (`POST`), retry shortly, and contact the UpsideMAX team if it persists.

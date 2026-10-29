@@ -1,5 +1,5 @@
 """
-EIP-712 signing for the Upside `/exchange` endpoint.
+EIP-712 signing for the UpsideMAX `/exchange` endpoint.
 
 Digest is standard EIP-712 (domain name="Exchange" / version="1" / chainId /
 verifyingContract=0x0). The chainId depends on the environment — 9788 on Mainnet,

@@ -10,7 +10,7 @@
 
 ---
 
-## Upside 是什么
+## UpsideMAX 是什么
 
 一个去中心化的永续合约交易所（perpetual futures DEX）。你用一种稳定币（结算币，从 `configs` 读取）做保证金，可以做多或做空 `BTC-USDC`、`ETH-USDC` 等合约。每次操作（充值、下单、撤单）都是由钱包地址签名发起的请求 —— 没有用户名密码。
 
@@ -114,11 +114,11 @@ python3 examples/01_register.py
 
 ### 为什么需要邀请码？
 
-主网和 Devnet 注册都需要邀请码。请向 Upside 团队申请，并通过 `UPSIDE_INVITE_CODE` 环境变量设置。邀请码放在 envelope 层（**不是** action 里）；`common.py` 会自动处理。
+主网和 Devnet 注册都需要邀请码。请向 UpsideMAX 团队申请，并通过 `UPSIDE_INVITE_CODE` 环境变量设置。邀请码放在 envelope 层（**不是** action 里）；`common.py` 会自动处理。
 
 ## 第 2 步：为账户注资
 
-新注册的账户余额为 **0** —— 任何环境都不会自动到账。交易前请先为账户注资（注资方式请联系 Upside 团队），然后检查：
+新注册的账户余额为 **0** —— 任何环境都不会自动到账。交易前请先为账户注资 —— **主网**请向账户充值（没有水龙头，也没有空投）；**Devnet** 资金获取方式请联系 UpsideMAX 团队。然后检查：
 
 ```bash
 python3 examples/02_check_funding.py      # 默认用 .env 里的 USER_ACCOUNT_ID
@@ -136,8 +136,8 @@ python3 examples/03_check_balance.py 26
 
 ```python
 # 用 common.py 的一行调用
-from common import send_exchange, keys
-pk = keys.PrivateKey(bytes.fromhex("<你的私钥>"))
+from common import send_exchange, require_user_wallet
+pk, _, _ = require_user_wallet()          # 从 .env 读 USER_PRIVATE_KEY
 send_exchange(pk, {"type":"enrollUserToMarketOwner","marketDeployerId":1})
 send_exchange(pk, {"type":"lockCollateral","marketDeployerId":1,"coinId":1,"amount":"1000000000000"})
 ```
@@ -157,11 +157,11 @@ python3 examples/04_market_info.py 1
 ## 第 5 步：下单
 
 ```bash
-python3 examples/05_place_order.py 0x<你的私钥> 1 100 1 buy
+python3 examples/05_place_order.py 1 100 1 buy
 ```
 
 参数：
-- `0x<你的私钥>` — 你的私钥
+- （签名私钥从 `.env` 读取 —— 不要放在命令行里）
 - `1` — contractId（跑 `11_show_configs.py` 看所有合约）
 - `100` — 限价
 - `1` — 数量
@@ -190,12 +190,12 @@ python3 examples/06_cancel_order.py list 26
 ## 第 6 步：撤单
 
 ```bash
-python3 examples/06_cancel_order.py cancel 0x<私钥> 1 <oid>
+python3 examples/06_cancel_order.py cancel 1 <oid>
 ```
 
 或者一键撤掉某合约上所有单：
 ```bash
-python3 examples/06_cancel_order.py cancel-all 0x<私钥> 1
+python3 examples/06_cancel_order.py cancel-all 1
 ```
 
 ## 然后呢
@@ -209,11 +209,11 @@ python3 examples/06_cancel_order.py cancel-all 0x<私钥> 1
 | 用单独的 key 跑机器人 | [../skills/upside-advanced/references/agent-delegation.md](../skills/upside-advanced/references/agent-delegation.md) |
 | 给仓位加止盈止损 | [../skills/upside-advanced/references/tpsl.md](../skills/upside-advanced/references/tpsl.md) |
 | 看懂某个报错 | [faq.zh-CN.md](faq.zh-CN.md) 或 [../skills/upside-advanced/references/error-codes.md](../skills/upside-advanced/references/error-codes.md) |
-| 增加资金 | 联系 Upside 团队 |
+| 增加资金 | 主网：向账户充值 · Devnet：联系 UpsideMAX 团队 |
 
 ## AI 辅助模式
 
-如果你用 Claude Code、Cursor 或其他 AI 编码工具，上面的内容都不用读。直接跟 AI 说"我想在 Upside 上试试交易"，它会自动按 skill 流程带你完成。详见 [../README.md](../README.md#skill-loading)。
+如果你用 Claude Code、Cursor 或其他 AI 编码工具，上面的内容都不用读。直接跟 AI 说"我想在 UpsideMAX 上试试交易"，它会自动按 skill 流程带你完成。"我想试试"会启动一键体验（`upside-test`），它默认连 **Devnet**；其他 skill 默认作用于主网，除非 `UPSIDE_BASE_URL` 指向 Devnet。详见 [../README.md](../README.md#skill-loading)。
 
 ## 新手最常见的 3 个问题
 

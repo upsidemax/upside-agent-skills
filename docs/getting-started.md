@@ -1,6 +1,6 @@
 # Getting Started
 
-This guide takes you from zero to your first order on Upside. No prior DEX experience is required.
+This guide takes you from zero to your first order on UpsideMAX. No prior DEX experience is required.
 
 **Summary** — one command:
 ```bash
@@ -10,7 +10,7 @@ That is the complete flow. Read the sections below to understand each step.
 
 ---
 
-## What is Upside?
+## What is UpsideMAX?
 
 A decentralized perpetual futures exchange. You put up a stablecoin (the settle coin — read it from `configs`) as collateral, and you can go long or short on contracts like `BTC-USDC`, `ETH-USDC`, etc. Every action (deposit, order, cancel) is a signed request from a wallet address — no username/password.
 
@@ -111,11 +111,11 @@ The private key is written to the gitignored `.env` (mode 600) and is **never pr
 
 ### Why is there an invitation code?
 
-Registration requires an invitation code on Mainnet and Devnet. Request one from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable. The code is placed at the envelope level (not inside `action`); `common.py` handles this.
+Registration requires an invitation code on Mainnet and Devnet. Request one from the UpsideMAX team and set it via the `UPSIDE_INVITE_CODE` environment variable. The code is placed at the envelope level (not inside `action`); `common.py` handles this.
 
 ## Step 2: Fund your account
 
-A newly registered account has a **zero balance** — nothing is credited automatically, on any environment. Fund it before trading (contact the Upside team for how), then check:
+A newly registered account has a **zero balance** — nothing is credited automatically, on any environment. Fund it before trading — on **Mainnet**, deposit funds into the account (there is no faucet or airdrop); on **Devnet**, contact the UpsideMAX team for Devnet funds. Then check:
 
 ```bash
 python3 examples/02_check_funding.py      # uses USER_ACCOUNT_ID from .env
@@ -133,8 +133,8 @@ Shows both layers with the actual coin name (auto-detected). If MO=1 has settle-
 
 ```python
 # One-liner via examples/common.py
-from common import send_exchange, keys
-pk = keys.PrivateKey(bytes.fromhex("<your priv>"))
+from common import send_exchange, require_user_wallet
+pk, _, _ = require_user_wallet()          # USER_PRIVATE_KEY from .env
 send_exchange(pk, {"type":"enrollUserToMarketOwner","marketDeployerId":1})
 send_exchange(pk, {"type":"lockCollateral","marketDeployerId":1,"coinId":1,"amount":"1000000000000"})
 ```
@@ -154,11 +154,11 @@ If `priceReady: false`, wait, or try a different contract.
 ## Step 5: Place your first order
 
 ```bash
-python3 examples/05_place_order.py 0x<your priv> 1 100 1 buy
+python3 examples/05_place_order.py 1 100 1 buy
 ```
 
 Arguments:
-- `0x<your priv>` — your private key
+- (the signing key is read from `.env` — never pass it on the command line)
 - `1` — contractId (run `11_show_configs.py` to see all)
 - `100` — limit price
 - `1` — order size
@@ -187,12 +187,12 @@ If you see zero orders despite `http 202`, the matching engine silently dropped 
 ## Step 6: Cancel your order
 
 ```bash
-python3 examples/06_cancel_order.py cancel 0x<your priv> 1 <oid>
+python3 examples/06_cancel_order.py cancel 1 <oid>
 ```
 
 Or nuke all your orders on a contract:
 ```bash
-python3 examples/06_cancel_order.py cancel-all 0x<your priv> 1
+python3 examples/06_cancel_order.py cancel-all 1
 ```
 
 ## What next
@@ -206,11 +206,11 @@ You've done the full loop. From here:
 | Use a separate key for the bot | [../skills/upside-advanced/references/agent-delegation.md](../skills/upside-advanced/references/agent-delegation.md) |
 | Attach a stop-loss to my position | [../skills/upside-advanced/references/tpsl.md](../skills/upside-advanced/references/tpsl.md) |
 | Understand an error I got | [faq.md](faq.md) or [../skills/upside-advanced/references/error-codes.md](../skills/upside-advanced/references/error-codes.md) |
-| Add funds | contact the Upside team |
+| Add funds | Mainnet: deposit into the account · Devnet: contact the UpsideMAX team |
 
 ## AI-assisted mode
 
-If you're using Claude Code, Cursor, or another AI coding tool, you don't need to read any of the above. Just tell the AI what you want ("I want to try trading on Upside") and it will follow the skill flow automatically. See [../README.md](../README.md#skill-loading).
+If you're using Claude Code, Cursor, or another AI coding tool, you don't need to read any of the above. Just tell the AI what you want ("I want to try trading on UpsideMAX") and it will follow the skill flow automatically. "Let me try it" starts the one-command test drive (`upside-test`), which runs on **Devnet** by default; the other skills act on Mainnet unless `UPSIDE_BASE_URL` points to Devnet. See [../README.md](../README.md#skill-loading).
 
 ## Common first-time issues
 

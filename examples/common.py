@@ -80,7 +80,7 @@ WS_URL = _env("UPSIDE_WS_URL", "wss://" + BASE_URL.split("://", 1)[-1] + "/ws")
 CHAIN_ID = int(_env("UPSIDE_CHAIN_ID") or chain_id_for(BASE_URL))
 
 # Invitation code for registerAccount (required on Mainnet and Devnet). Request one from the
-# Upside team and provide it via UPSIDE_INVITE_CODE (or a .env entry). None is bundled.
+# UpsideMAX team and provide it via UPSIDE_INVITE_CODE (or a .env entry). None is bundled.
 INVITE_CODE = _env("UPSIDE_INVITE_CODE", "")
 
 HEADERS = {"Connection": "close", "Content-Type": "application/json"}
@@ -200,7 +200,7 @@ def register_account(pk, base=None, invite_code=None):
     """
     invite_code = invite_code if invite_code is not None else INVITE_CODE
     if not invite_code:
-        print("  ! No invitation code set. Request one from the Upside team and set UPSIDE_INVITE_CODE.")
+        print("  ! No invitation code set. Request one from the UpsideMAX team and set UPSIDE_INVITE_CODE.")
         return None
     code, r = send_exchange(pk, {
         "type": "registerAccount",
@@ -343,6 +343,17 @@ def usdt(raw):
 ENV_PATH = Path(__file__).resolve().parent.parent / ".env"
 
 
+def _save_env(values):
+    """Replace/append KEY=VALUE lines in the repo-root `.env` (mode 600)."""
+    lines = ENV_PATH.read_text(encoding="utf-8").splitlines() if ENV_PATH.exists() else []
+    kept = [ln for ln in lines if ln.partition("=")[0].strip() not in values]
+    kept += [f"{k}={v}" for k, v in values.items()]
+    ENV_PATH.write_text("\n".join(kept) + "\n", encoding="utf-8")
+    ENV_PATH.chmod(0o600)
+    _DOTENV.update(values)
+    return ENV_PATH
+
+
 def save_wallet(pk, account_id=None):
     """Write USER_PRIVATE_KEY (and USER_ACCOUNT_ID) into the repo-root `.env`.
 
@@ -353,20 +364,23 @@ def save_wallet(pk, account_id=None):
     values = {"USER_PRIVATE_KEY": "0x" + pk.to_hex()[2:]}
     if account_id is not None:
         values["USER_ACCOUNT_ID"] = str(account_id)
-    lines = ENV_PATH.read_text(encoding="utf-8").splitlines() if ENV_PATH.exists() else []
-    kept = [ln for ln in lines if ln.partition("=")[0].strip() not in values]
-    kept += [f"{k}={v}" for k, v in values.items()]
-    ENV_PATH.write_text("\n".join(kept) + "\n", encoding="utf-8")
-    ENV_PATH.chmod(0o600)
-    for k, v in values.items():
-        _DOTENV[k] = v
-    return ENV_PATH
+    return _save_env(values)
 
 
-FUNDING_HINT = (
-    "A newly registered account has a zero balance. Fund the account before trading\n"
-    "  (contact the Upside team for how to fund it), then re-run."
-)
+def _is_mainnet(base=None):
+    return (base or BASE_URL).split("://", 1)[-1].split("/", 1)[0] == "upsidemax.xyz"
+
+
+def funding_hint(base=None):
+    """What to tell the user when the account has no balance, per environment."""
+    if _is_mainnet(base):
+        return ("The account has a zero balance. Deposit funds into the account before\n"
+                "  trading, then re-run.")
+    return ("The account has a zero balance. For Devnet funds, contact the UpsideMAX team,\n"
+            "  then re-run.")
+
+
+FUNDING_HINT = funding_hint()
 
 
 def load_user_wallet():
@@ -393,3 +407,33 @@ def load_user_wallet():
         pk_hex = pk_hex[2:]
     pk = keys.PrivateKey(bytes.fromhex(pk_hex))
     return pk, pk.public_key.to_address(), aid
+
+
+def require_user_wallet():
+    """Return (PrivateKey, address, accountId) from `.env`, or exit with a hint.
+
+    Scripts never take a private key on the command line: it would land in the
+    shell history and in any AI chat that runs the command.
+    """
+    pk, addr, aid = load_user_wallet()
+    if not pk:
+        raise SystemExit("✗ USER_PRIVATE_KEY is not set in .env — run "
+                         "`python3 examples/01_register.py` first (it saves the key there).")
+    return pk, addr, aid
+
+
+def load_agent_wallet(create=False):
+    """Return (PrivateKey, address) for AGENT_PRIVATE_KEY in `.env`.
+
+    With ``create=True`` a missing agent key is generated and saved (never
+    printed). Returns (None, None) when absent and not created.
+    """
+    pk_hex = _env("AGENT_PRIVATE_KEY")
+    if not pk_hex:
+        if not create:
+            return None, None
+        pk, addr = new_wallet()
+        _save_env({"AGENT_PRIVATE_KEY": "0x" + pk.to_hex()[2:]})
+        return pk, addr
+    pk = keys.PrivateKey(bytes.fromhex(pk_hex[2:] if pk_hex.startswith("0x") else pk_hex))
+    return pk, pk.public_key.to_address()

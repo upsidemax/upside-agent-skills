@@ -1,6 +1,6 @@
 ---
 name: upside-onboarding
-description: "Upside first-time onboarding — the single skill for creating an account, checking whether it is funded, and verifying balance (Mainnet by default, or Devnet). Trigger when the user says: register / sign up / create account / new account / I want to trade / I have no account yet / how do I start / open an account / fund my account / where's my balance / why is my balance zero / check my USDC / show my balance / verify my funds / invite code / invitation code / 邀请码 / 注册账户 / 我要交易 / 我的余额 / 查余额 / 余额为零. Prerequisite skill for upside-trading."
+description: "UpsideMAX first-time onboarding — the single skill for creating an account, checking whether it is funded, and verifying balance (Mainnet by default, or Devnet). Trigger when the user says: register / sign up / create account / new account / I want to trade / I have no account yet / how do I start / open an account / fund my account / where's my balance / why is my balance zero / check my USDC / show my balance / verify my funds / invite code / invitation code / 邀请码 / 注册账户 / 我要交易 / 我的余额 / 查余额 / 余额为零. Prerequisite skill for upside-trading."
 license: MIT
 metadata:
   author: upside-agent-skills
@@ -17,7 +17,7 @@ metadata:
         label: "Install Python dependencies"
 ---
 
-# Upside Onboarding
+# UpsideMAX Onboarding
 
 First-time flow: wallet generation → registration (with an invitation code) → balance check → funding. Targets **Mainnet** (`https://upsidemax.xyz`, real funds) by default; Devnet (`https://dev.upsidemax.xyz`) via `UPSIDE_BASE_URL`. A new account starts with a zero balance on both.
 

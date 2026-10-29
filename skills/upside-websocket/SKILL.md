@@ -1,6 +1,6 @@
 ---
 name: upside-websocket
-description: "Upside real-time streams — the single skill for WebSocket subscriptions. Trigger when the user says: stream / subscribe / live price / real-time / watch the book / watch trades / listen to fills / order stream / websocket / WS / push / feed / candle stream / 订阅 / 实时 / 推送 / 行情推送 / 监听. The subscribe protocol uses `{method:\"subscribe\", subscription:{…}}`; the `msg:Subscribe` form is not supported."
+description: "UpsideMAX real-time streams — the single skill for WebSocket subscriptions. Trigger when the user says: stream / subscribe / live price / real-time / watch the book / watch trades / listen to fills / order stream / websocket / WS / push / feed / candle stream / 订阅 / 实时 / 推送 / 行情推送 / 监听. The subscribe protocol uses `{method:\"subscribe\", subscription:{…}}`; the `msg:Subscribe` form is not supported."
 license: MIT
 metadata:
   author: upside-agent-skills
@@ -17,7 +17,7 @@ metadata:
         label: "Install WebSocket client"
 ---
 
-# Upside WebSocket
+# UpsideMAX WebSocket
 
 Subscribe to real-time market and account streams. Endpoint: `wss://upsidemax.xyz/ws` (Mainnet, default) or `wss://dev.upsidemax.xyz/ws` (Devnet). Protocol: a JSON subscribe protocol — `{method:"subscribe", subscription:{…}}`.
 

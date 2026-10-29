@@ -34,9 +34,9 @@ If the request spans multiple skills, run onboarding first (it's the prerequisit
 Before any action, verify:
 
 1. **Deps installed** — `pip show eth-keys eth-utils requests websocket-client` should all return a version.
-2. **Endpoint reachable** — `curl -s -m 5 -X POST https://upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"marketState","asset":"1"}'` should return JSON with `type: "marketState"`. If not, retry shortly; if it persists, contact the Upside team.
+2. **Endpoint reachable** — `curl -s -m 5 -X POST https://upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"marketState","asset":"1"}'` should return JSON with `type: "marketState"`. If not, retry shortly; if it persists, contact the UpsideMAX team.
 3. **User has a private key** — if not, `examples/01_register.py` generates one and saves it to the local `.env` without printing it. Never accept a private key over chat; ask the user to run the script themselves.
-4. **Environment** — the default is **Mainnet** (`https://upsidemax.xyz`, real funds). Devnet is `UPSIDE_BASE_URL=https://dev.upsidemax.xyz`. Say which environment you are about to act on before the first write.
+4. **Environment** — the default is **Mainnet** (`https://upsidemax.xyz`, real funds). Devnet is `UPSIDE_BASE_URL=https://dev.upsidemax.xyz`. Exception: `upside-test` (the one-command test drive) defaults to **Devnet**; `UPSIDE_BASE_URL=https://upsidemax.xyz` moves it to Mainnet. Say which environment you are about to act on before the first write.
 
 ## Prohibited
 

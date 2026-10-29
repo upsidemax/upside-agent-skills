@@ -1,12 +1,12 @@
-# Upside Agent Skills
+# UpsideMAX Agent Skills
 
-AI agent skills for Upside, a decentralized, self-custody perpetual-futures exchange. The skills let an AI coding assistant register, trade, and stream over Upside's REST and WebSocket APIs — on **Mainnet** by default, or on Devnet.
+AI agent skills for UpsideMAX, a decentralized, self-custody perpetual-futures exchange. The skills let an AI coding assistant register, trade, and stream over UpsideMAX's REST and WebSocket APIs — on **Mainnet** by default, or on Devnet.
 
 Each skill is a single Markdown file (`SKILL.md`) with a YAML frontmatter header. An AI agent can read the frontmatter to know *when* to activate a skill and *how* to complete a task, without needing the user to describe the flow.
 
 ## What you get
 
-- **5 skills** — a guided **`upside-test`** to try the whole product in one command, plus four covering the full trading lifecycle from zero to your first order.
+- **5 skills** — a guided **`upside-test`** to try the whole product in one command (on **Devnet** by default), plus four covering the full trading lifecycle from zero to your first order.
 - **10 runnable Python scripts** in [`examples/`](examples/) — copy, paste, run.
 - **No CLI dependency** — everything is raw HTTP / WebSocket.
 
@@ -14,7 +14,7 @@ Each skill is a single Markdown file (`SKILL.md`) with a YAML frontmatter header
 
 | skill | when to activate | main flow |
 |---|---|---|
-| [`upside-test`](skills/upside-test/SKILL.md) | user wants to **try / experience** the product ("let me try it", "体验") | one-command flows: register → balance → place & cancel an order, plus live market, explain, tour |
+| [`upside-test`](skills/upside-test/SKILL.md) | user wants to **try / experience** the product ("let me try it", "体验") | one-command flows on **Devnet** (by default): register → balance → place & cancel an order, plus live market, explain, tour |
 | [`upside-onboarding`](skills/upside-onboarding/SKILL.md) | user has no account, or funds are 0 | register (needs an invitation code) → check balance → fund the account if it is 0 |
 | [`upside-trading`](skills/upside-trading/SKILL.md) | user wants to trade, query price, or manage orders | market state → place limit/IOC → query orders → cancel |
 | [`upside-websocket`](skills/upside-websocket/SKILL.md) | user wants live price / fills / order updates | JSON `{method:"subscribe"}` on `l2Book / bbo / trades / config / orderUpdates` |
@@ -29,13 +29,13 @@ cd upside-agent-skills-main
 # (or, if you have git:  git clone https://github.com/upsidemax/upside-agent-skills.git && cd upside-agent-skills)
 
 ./install.sh                             # installs the Python dependencies
-export UPSIDE_INVITE_CODE=<your-code>    # request one from the Upside team
+export UPSIDE_INVITE_CODE=<your-code>    # request one from the UpsideMAX team
 python3 examples/quick_start.py          # e2e on Mainnet: register → check balance → place & cancel an order
 ```
 
 > Only **Python 3.9+** is required. `curl`/`tar` (for the download) ship with macOS, Linux, and Windows 10+; `git` is optional.
 
-New to DEX or Upside? Read **[docs/getting-started.md](docs/getting-started.md)** first — 10-minute guided walkthrough with all the concepts (mo=0 vs MO=1, signer model, EIP-712 signing). Chinese: **[getting-started.zh-CN.md](docs/getting-started.zh-CN.md)**.
+New to DEX or UpsideMAX? Read **[docs/getting-started.md](docs/getting-started.md)** first — 10-minute guided walkthrough with all the concepts (mo=0 vs MO=1, signer model, EIP-712 signing). Chinese: **[getting-started.zh-CN.md](docs/getting-started.zh-CN.md)**.
 
 Hit an error? Check **[docs/faq.md](docs/faq.md)** — every failure mode from the skill references, one page. Chinese: **[faq.zh-CN.md](docs/faq.zh-CN.md)**.
 
@@ -48,8 +48,9 @@ to the gitignored `.env` for you (the key is never printed). Later scripts pick 
 python3 examples/10_use_saved_wallet.py   # picks up .env automatically
 ```
 
-A newly registered account has a **zero balance** — fund it before trading
-(contact the Upside team for how).
+A newly registered account has a **zero balance** — fund it before trading.
+Mainnet: deposit funds into the account (there is no faucet or airdrop).
+Devnet: contact the UpsideMAX team for Devnet funds.
 
 ## Environments
 
@@ -58,7 +59,7 @@ A newly registered account has a **zero balance** — fund it before trading
 | **Mainnet (default)** | `https://upsidemax.xyz` | `wss://upsidemax.xyz/ws` | `9788` | yes |
 | Devnet | `https://dev.upsidemax.xyz` | `wss://dev.upsidemax.xyz/ws` | `9767` | yes |
 
-> Set your invitation code with `export UPSIDE_INVITE_CODE=<your-code>` before registering (request one from the Upside team). To use Devnet, `export UPSIDE_BASE_URL=https://dev.upsidemax.xyz`; the WebSocket URL and chain ID follow it. Mainnet is real funds — see [SECURITY.md](SECURITY.md).
+> Set your invitation code with `export UPSIDE_INVITE_CODE=<your-code>` before registering (request one from the UpsideMAX team). To use Devnet, `export UPSIDE_BASE_URL=https://dev.upsidemax.xyz`; the WebSocket URL and chain ID follow it. The one-command test drive (`upside-test`) is the exception: it runs on Devnet by default — `export UPSIDE_BASE_URL=https://upsidemax.xyz` to run it on Mainnet. Mainnet is real funds — see [SECURITY.md](SECURITY.md).
 
 ## Three common mistakes to avoid
 

@@ -1,11 +1,11 @@
 # Register
 
-Create a new account on Upside — Mainnet by default (`https://upsidemax.xyz`), or Devnet via `UPSIDE_BASE_URL=https://dev.upsidemax.xyz`. Idempotent: safe to run twice. Signed by the wallet's own key. Say which environment you are registering on before you run it.
+Create a new account on UpsideMAX — Mainnet by default (`https://upsidemax.xyz`), or Devnet via `UPSIDE_BASE_URL=https://dev.upsidemax.xyz`. Idempotent: safe to run twice. Signed by the wallet's own key. Say which environment you are registering on before you run it.
 
 ## Workflow
 
 1. **Confirm the user has a private key.** If not, run `python3 examples/01_register.py` (which generates a key, saves it to the local `.env` without printing it, and registers in one shot). If yes, they can invoke `registerAccount` themselves — see step 3.
-2. **Include the invitation code.** Registration requires one on Mainnet and Devnet. Request it from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable; it is supplied at envelope level as `inviteCode`.
+2. **Include the invitation code.** Registration requires one on Mainnet and Devnet. Request it from the UpsideMAX team and set it via the `UPSIDE_INVITE_CODE` environment variable; it is supplied at envelope level as `inviteCode`.
 3. **Run:**
    ```bash
    python3 examples/01_register.py
@@ -56,7 +56,7 @@ Extract: `aid = message.split("accountId=")[-1].strip()`. Treat as success.
 http 400
 body: {"status":"error","code":"BAD_REQUEST","message":"inviteCode required"}
 ```
-Fix: add the invitation code as `"inviteCode"` at envelope level (request one from the Upside team and set it via the `UPSIDE_INVITE_CODE` environment variable). Re-run.
+Fix: add the invitation code as `"inviteCode"` at envelope level (request one from the UpsideMAX team and set it via the `UPSIDE_INVITE_CODE` environment variable). Re-run.
 
 ### Case D — signer mismatch
 ```
@@ -70,21 +70,22 @@ Cause: signed with the wrong key. Cannot register on someone else's behalf. If t
 Render verbatim (substitute `{…}`):
 
 ```
-✓ Registered on Upside ({Mainnet | Devnet})
+✓ Registered on UpsideMAX ({Mainnet | Devnet})
 
   Account ID:   {aid}
   Address:      {addr}
   Status:       {new | pre-existing}
   Private key:  saved to .env (not shown)
   Next step:    The account starts with a zero balance — fund it before trading
-                (contact the Upside team for how), then check:
+                ({Mainnet: deposit funds into the account |
+                  Devnet: contact the UpsideMAX team for Devnet funds}), then check:
                 python3 examples/02_check_funding.py {aid}
 ```
 
 For pre-existing accounts:
 
 ```
-ℹ Account already exists on Upside ({Mainnet | Devnet})
+ℹ Account already exists on UpsideMAX ({Mainnet | Devnet})
 
   Account ID:   {aid}
   Address:      {addr}
@@ -94,7 +95,7 @@ For pre-existing accounts:
 ## Field validity
 
 - `address`: lowercase, `0x`-prefixed, exactly 42 chars total. Mixed-case (EIP-55) is unsafe — some backends reject it.
-- `inviteCode`: case-sensitive. Enter it exactly as provided by the Upside team.
+- `inviteCode`: case-sensitive. Enter it exactly as provided by the UpsideMAX team.
 - `nonce`: millisecond Unix timestamp. Not important which epoch — backend just checks it's not a replay.
 
 ## Confirming Response
@@ -108,7 +109,7 @@ For pre-existing accounts:
 | `http 400 inviteCode required` | put `inviteCode` inside `action` | move to envelope level |
 | `http 401 SIGNATURE_INVALID` | wrong key signed | use the key that owns `action.address` |
 | `http 409 ACCOUNT_ALREADY_EXISTS` | not a failure | parse `accountId=N` from message; proceed |
-| No response / timeout | endpoint unreachable | retry shortly; if it persists, contact the Upside team |
+| No response / timeout | endpoint unreachable | retry shortly; if it persists, contact the UpsideMAX team |
 
 ## See also
 

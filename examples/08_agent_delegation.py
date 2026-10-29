@@ -22,36 +22,28 @@ Fields:
   - agentName      : optional; omit or empty = anonymous slot
   - validUntil     : optional ms-timestamp expiry; 0 or omitted = permanent
 
+Keys come from `.env`, never the command line: the master key is
+USER_PRIVATE_KEY (written by 01_register.py); the agent key is
+AGENT_PRIVATE_KEY, generated and saved there on first run if missing.
+
 Usage:
-  python3 examples/08_agent_delegation.py <master_priv> <agent_priv> [name] [validUntil_ms]
+  python3 examples/08_agent_delegation.py [name] [validUntil_ms]
 """
 
 import sys
 import time
 
-from eth_keys import keys as eth_keys_module
-
-from common import send_exchange, info, addr_of
-
-
-def _load(pk_hex):
-    if pk_hex.startswith("0x"):
-        pk_hex = pk_hex[2:]
-    return eth_keys_module.PrivateKey(bytes.fromhex(pk_hex))
+from common import ENV_PATH, info, load_agent_wallet, require_user_wallet, send_exchange
 
 
 def main():
-    if len(sys.argv) < 3:
-        print("usage: python3 08_agent_delegation.py <master_priv_hex> <agent_priv_hex> [agentName] [validUntil_ms]")
-        sys.exit(1)
-
-    master = _load(sys.argv[1])
-    agent = _load(sys.argv[2])
-    agent_name = sys.argv[3] if len(sys.argv) > 3 else None
-    valid_until = int(sys.argv[4]) if len(sys.argv) > 4 else None
-
-    master_addr = addr_of(master)
-    agent_addr = addr_of(agent)
+    master, master_addr, master_aid = require_user_wallet()
+    had_agent = load_agent_wallet()[0] is not None
+    agent, agent_addr = load_agent_wallet(create=True)
+    if not had_agent:
+        print(f"  new agent key saved to {ENV_PATH} (AGENT_PRIVATE_KEY, not shown)")
+    agent_name = sys.argv[1] if len(sys.argv) > 1 else None
+    valid_until = int(sys.argv[2]) if len(sys.argv) > 2 else None
 
     # ── approveAgent ────────────────────────────────────
     action = {"type": "approveAgent", "agentAddress": agent_addr}
@@ -74,15 +66,8 @@ def main():
     time.sleep(1)
 
     # ── verify via userAgents ───────────────────────────
-    # We need master's accountId; if you don't have it, run 01_register.py
-    # first or ask the backend via registerAccount (it will 409 and give aid).
-    code, rr = send_exchange(master, {"type": "registerAccount", "address": master_addr})
-    master_aid = rr.get("response", {}).get("accountId")
-    if not master_aid:
-        msg = str(rr.get("message", ""))
-        if "accountId=" in msg:
-            master_aid = msg.split("accountId=")[-1].strip()
-    print(f"\n  master accountId={master_aid}")
+    # master accountId comes from USER_ACCOUNT_ID in .env (01_register.py saves it).
+    print(f"\n  master accountId={master_aid or '(USER_ACCOUNT_ID not set in .env)'}")
 
     if master_aid:
         ua = info({"type": "userAgents", "accountId": master_aid})

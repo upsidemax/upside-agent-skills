@@ -28,10 +28,10 @@ Windows 上用 Git Bash 或 WSL。或者手动执行 pip 命令。
 ### 请求 `https://upsidemax.xyz/info`（或 `https://dev.upsidemax.xyz/info`）超时
 端点可能暂时不可用，或您的网络阻断了该请求。
 1. 运行 `curl -v -X POST https://upsidemax.xyz/info -H 'Content-Type: application/json' -d '{"type":"configs"}'`（Devnet 用 `https://dev.upsidemax.xyz/info`）查看具体错误。
-2. 请稍后重试；若问题持续，请联系 Upside 团队。
+2. 请稍后重试；若问题持续，请联系 UpsideMAX 团队。
 
 ### `POST /info` 返回 HTML 而非 JSON
-该端点当前未代理 `/info`。请稍后重试；若问题持续，请联系 Upside 团队。
+该端点当前未代理 `/info`。请稍后重试；若问题持续，请联系 UpsideMAX 团队。
 
 ### WebSocket 能连上但没消息
 您使用的订阅格式不受支持。服务端采用基于 JSON 的订阅协议，使用 `{"method":"subscribe","subscription":{...}}` 帧。请改为：
@@ -49,7 +49,7 @@ Windows 上用 Git Bash 或 WSL。或者手动执行 pip 命令。
 ✗ {"action":{"type":"registerAccount","address":"0x…","inviteCode":"<invite-code>"}, …}
 ✓ {"action":{"type":"registerAccount","address":"0x…"}, "inviteCode":"<invite-code>", …}
 ```
-请向 Upside 团队申请邀请码，并通过 `UPSIDE_INVITE_CODE` 环境变量设置。
+请向 UpsideMAX 团队申请邀请码，并通过 `UPSIDE_INVITE_CODE` 环境变量设置。
 
 ### `http 409 ACCOUNT_ALREADY_EXISTS`
 不是错误 —— 已经注册过了。从 message 里解析 `accountId`：
@@ -64,7 +64,7 @@ aid = msg.split("accountId=")[-1].strip()
 ## 资金
 
 ### 注册后 `depositNonce = 0`、没有资金
-正常现象。新注册的账户在任何环境下余额都为 0，不会自动到账。交易前请先为账户注资（注资方式请联系 Upside 团队）。重新注册新钱包没有帮助。
+正常现象。新注册的账户在任何环境下余额都为 0，不会自动到账。交易前请先为账户注资：主网请向账户充值；Devnet 资金获取方式请联系 UpsideMAX 团队。重新注册新钱包没有帮助。
 
 ### 余额字段全是 `null`
 您使用了 `marketOwnerId` 而非 `marketDeployerId`。正确的字段是 `marketDeployerId`；使用 `marketOwnerId` 会返回 null 字段而非报错。

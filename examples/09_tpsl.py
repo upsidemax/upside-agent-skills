@@ -18,42 +18,36 @@ Pending TP/SL show up in `userOrders` with:
 
 WS orderUpdates emit the same fields when a TP/SL is created/canceled/triggered.
 
+The signing key is read from `.env` (USER_PRIVATE_KEY, written by
+01_register.py) — never pass a private key on the command line.
+
 Usage:
-  python3 examples/09_tpsl.py <priv_key> <contractId> <tpPrice> <slPrice>
-  python3 examples/09_tpsl.py cancel <priv_key> <contractId>
+  python3 examples/09_tpsl.py <contractId> <tpPrice> [slPrice]
+  python3 examples/09_tpsl.py cancel <contractId>
 """
 
 import sys
 
-from eth_keys import keys as eth_keys_module
-
-from common import send_exchange
-
-
-def _load(pk_hex):
-    if pk_hex.startswith("0x"):
-        pk_hex = pk_hex[2:]
-    return eth_keys_module.PrivateKey(bytes.fromhex(pk_hex))
+from common import require_user_wallet, send_exchange
 
 
 def main():
-    if len(sys.argv) < 4:
+    if len(sys.argv) < 3:
         print(__doc__)
         sys.exit(1)
+    pk, _, _ = require_user_wallet()
 
     if sys.argv[1] == "cancel":
-        pk = _load(sys.argv[2])
-        contract_id = int(sys.argv[3])
+        contract_id = int(sys.argv[2])
         code, r = send_exchange(pk, {
             "type": "cancelTpSl", "a": contract_id, "positionSide": 0,
         })
         print(f"cancelTpSl  http {code}  body {r}")
         return
 
-    pk = _load(sys.argv[1])
-    contract_id = int(sys.argv[2])
-    tp_price = sys.argv[3]
-    sl_price = sys.argv[4] if len(sys.argv) > 4 else None
+    contract_id = int(sys.argv[1])
+    tp_price = sys.argv[2]
+    sl_price = sys.argv[3] if len(sys.argv) > 3 else None
 
     action = {
         "type": "tpSl",

@@ -121,7 +121,7 @@ Not ready:
 
   Any order you place will be accepted at HTTP layer (202) but silently dropped
   by the matching engine. Wait for the oracle service to push prices, or ask
-  the Upside team when it is expected.
+  the UpsideMAX team when it is expected.
 
   Do you want to place an order anyway (it will not fill)?
 ```

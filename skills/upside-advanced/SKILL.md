@@ -1,6 +1,6 @@
 ---
 name: upside-advanced
-description: "Upside advanced — agent delegation, TP/SL entries, and error code decoding. Trigger when the user says: run a bot / trading bot / delegate trading / approve agent / revoke agent / API key for bot / grant trading permission / hot wallet / cold wallet / take profit / stop loss / TP/SL / trigger / conditional order / trailing stop / what does errorCode N mean / why was my request rejected / decode error / 代理签名 / 授权机器人 / 止盈 / 止损 / 条件单 / 错误码含义. Requires the account already has a working master key and MO=1 balance."
+description: "UpsideMAX advanced — agent delegation, TP/SL entries, and error code decoding. Trigger when the user says: run a bot / trading bot / delegate trading / approve agent / revoke agent / API key for bot / grant trading permission / hot wallet / cold wallet / take profit / stop loss / TP/SL / trigger / conditional order / trailing stop / what does errorCode N mean / why was my request rejected / decode error / 代理签名 / 授权机器人 / 止盈 / 止损 / 条件单 / 错误码含义. Requires the account already has a working master key and MO=1 balance."
 license: MIT
 metadata:
   author: upside-agent-skills
@@ -17,7 +17,7 @@ metadata:
         label: "Install Python dependencies"
 ---
 
-# Upside Advanced
+# UpsideMAX Advanced
 
 Three related but distinct topics that show up together in practice.
 

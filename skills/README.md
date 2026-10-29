@@ -4,7 +4,7 @@ Each subdirectory is one skill: `SKILL.md` is the main entry with frontmatter; `
 
 | skill | when it fires |
 |---|---|
-| [upside-test](upside-test/SKILL.md) | user wants to **try / experience** the product in one command (entry skill) |
+| [upside-test](upside-test/SKILL.md) | user wants to **try / experience** the product in one command (entry skill; runs on Devnet by default) |
 | [upside-onboarding](upside-onboarding/SKILL.md) | user has no account or 0 balance |
 | [upside-trading](upside-trading/SKILL.md) | user wants prices, orders, or cancels |
 | [upside-websocket](upside-websocket/SKILL.md) | user wants a live stream |

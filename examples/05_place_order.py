@@ -24,32 +24,27 @@ processes asynchronously. If the contract has priceReady=false (no oracle push
 yet), the engine silently drops the order — you'll see http=202 but nothing
 in `userOrders`. Check `04_market_info.py` first.
 
-Usage:
-  python3 examples/05_place_order.py <private_key_hex> [contractId] [price] [size] [side]
+The signing key is read from `.env` (USER_PRIVATE_KEY, written by
+01_register.py) — never pass a private key on the command line.
 
+Usage:
+  python3 examples/05_place_order.py [contractId] [price] [size] [side]
+
+  price / size: raw integers (see configs priceScale / qtyScale)
   side: "buy" (default) or "sell"
 """
 
 import sys
 
-from eth_keys import keys as eth_keys_module
-
-from common import send_exchange
+from common import BASE_URL, require_user_wallet, send_exchange
 
 
 def main():
-    if len(sys.argv) < 2:
-        print("usage: python3 05_place_order.py <private_key_hex> [contractId=1] [price=100] [size=1] [side=buy]")
-        sys.exit(1)
-    pk_hex = sys.argv[1]
-    if pk_hex.startswith("0x"):
-        pk_hex = pk_hex[2:]
-    pk = eth_keys_module.PrivateKey(bytes.fromhex(pk_hex))
-
-    contract_id = int(sys.argv[2]) if len(sys.argv) > 2 else 1
-    price       = sys.argv[3]       if len(sys.argv) > 3 else "100"
-    size        = sys.argv[4]       if len(sys.argv) > 4 else "1"
-    side        = sys.argv[5]       if len(sys.argv) > 5 else "buy"
+    pk, addr, _ = require_user_wallet()
+    contract_id = int(sys.argv[1]) if len(sys.argv) > 1 else 1
+    price       = sys.argv[2]       if len(sys.argv) > 2 else "100"
+    size        = sys.argv[3]       if len(sys.argv) > 3 else "1"
+    side        = sys.argv[4]       if len(sys.argv) > 4 else "buy"
     is_buy      = side.lower() in ("buy", "b", "long", "true")
 
     action = {
@@ -64,7 +59,7 @@ def main():
             "t": {"limit": {"tif": "Gtc"}},
         }],
     }
-    print(f"→ POST /exchange")
+    print(f"→ POST {BASE_URL}/exchange   (signer {addr})")
     print(f"   {'buy' if is_buy else 'sell'} contract={contract_id} price={price} size={size}")
     code, r = send_exchange(pk, action)
     print(f"\nhttp {code}")

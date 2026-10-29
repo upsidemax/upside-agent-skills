@@ -4,8 +4,7 @@
                         don't have to paste the private key on every script.
 
 Setup once:
-  cp .env.example .env
-  # edit .env: fill in USER_PRIVATE_KEY (from 01_register.py) and USER_ACCOUNT_ID
+  python3 examples/01_register.py   # saves USER_PRIVATE_KEY / USER_ACCOUNT_ID to .env
 
 Then any script (including this one) can pick up your identity automatically.
 
@@ -23,9 +22,7 @@ def main():
     pk, addr, aid = load_user_wallet()
     if not pk:
         print("✗ USER_PRIVATE_KEY not set in .env")
-        print("  1. cp .env.example .env")
-        print("  2. run: python3 examples/01_register.py  # get a fresh key")
-        print("  3. paste the private key into .env")
+        print("  run: python3 examples/01_register.py  # generates a key and saves it to .env")
         return
 
     print(f"✓ Loaded wallet from .env")

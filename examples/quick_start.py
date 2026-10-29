@@ -35,7 +35,7 @@ CONTRACT_ID = 1   # first contract; actual name auto-detected via /info configs
 
 def main():
     print("=" * 60)
-    print(f"Upside quick-start  →  {BASE_URL}")
+    print(f"UpsideMAX quick-start  →  {BASE_URL}")
     print("=" * 60)
 
     # ── 1. Wallet ────────────────────────────────────────

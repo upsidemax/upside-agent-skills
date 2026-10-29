@@ -1,6 +1,6 @@
 ---
 name: upside-trading
-description: "Upside trading — the single skill for market data, order placement, order management, and cancellation. Trigger when the user says: buy X / sell X / place order / limit order / market order / IOC / GTC / post-only / cancel order / cancel all / modify order / change my order / what's the price of / show BTC price / order book / bid / ask / market state / my open orders / my orders / what orders do I have / update leverage / change leverage / 下单 / 挂单 / 撤单 / 取消订单 / 查订单 / 行情 / 盘口 / 修改订单 / 改杠杆. Requires an account with MO=1 balance — run upside-onboarding first."
+description: "UpsideMAX trading — the single skill for market data, order placement, order management, and cancellation. Trigger when the user says: buy X / sell X / place order / limit order / market order / IOC / GTC / post-only / cancel order / cancel all / modify order / change my order / what's the price of / show BTC price / order book / bid / ask / market state / my open orders / my orders / what orders do I have / update leverage / change leverage / 下单 / 挂单 / 撤单 / 取消订单 / 查订单 / 行情 / 盘口 / 修改订单 / 改杠杆. Requires an account with MO=1 balance — run upside-onboarding first."
 license: MIT
 metadata:
   author: upside-agent-skills
@@ -17,9 +17,9 @@ metadata:
         label: "Install Python dependencies"
 ---
 
-# Upside Trading
+# UpsideMAX Trading
 
-Query market state, place/cancel/modify orders on Upside — **Mainnet** (`https://upsidemax.xyz`, real funds) by default, or Devnet (`https://dev.upsidemax.xyz`) via `UPSIDE_BASE_URL`. State the environment before the first order. Assumes the user already has MO=1 balance (see [`../upside-onboarding/SKILL.md`](../upside-onboarding/SKILL.md) if not).
+Query market state, place/cancel/modify orders on UpsideMAX — **Mainnet** (`https://upsidemax.xyz`, real funds) by default, or Devnet (`https://dev.upsidemax.xyz`) via `UPSIDE_BASE_URL`. State the environment before the first order. Assumes the user already has MO=1 balance (see [`../upside-onboarding/SKILL.md`](../upside-onboarding/SKILL.md) if not).
 
 ## Intent Routing
 

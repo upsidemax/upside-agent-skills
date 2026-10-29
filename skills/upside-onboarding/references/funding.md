@@ -1,9 +1,16 @@
 # Funding
 
 A newly registered account has a **zero balance on every environment** (Mainnet
-and Devnet). Nothing is credited automatically. Before it can trade, the account
-has to be funded — the user should contact the Upside team for how to fund it.
-Do not invent a deposit method, and do not re-register to "get funds".
+and Devnet). Nothing is credited automatically — there is no airdrop. Before it can
+trade, the account has to be funded, and how depends on the environment:
+
+| Environment | How to fund |
+|---|---|
+| **Mainnet** | **Deposit** real funds into the account. There is no faucet. |
+| **Devnet** | Contact the UpsideMAX team for Devnet funds. |
+
+Do not invent a deposit address, endpoint, or faucet, and do not re-register to
+"get funds".
 
 ## Workflow
 
@@ -36,10 +43,12 @@ Both signed by the account owner. `lockCollateral` moves funds — confirm first
 ## Template — Not Funded
 
 ```
-⚠  Account {aid} has a zero balance on Upside ({environment}).
+⚠  Account {aid} has a zero balance on UpsideMAX ({Mainnet | Devnet}).
 
-  A newly registered account starts empty. Fund it before trading
-  (contact the Upside team for how), then re-run:
+  A newly registered account starts empty. Fund it before trading:
+    {Mainnet: deposit funds into the account |
+     Devnet:  contact the UpsideMAX team for Devnet funds}
+  then re-run:
     python3 examples/02_check_funding.py {aid}
 ```
 

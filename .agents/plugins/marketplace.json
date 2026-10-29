@@ -1,12 +1,12 @@
 {
   "name": "upside-agent-skills",
   "owner": {
-    "name": "Upside"
+    "name": "UpsideMAX"
   },
   "plugins": [
     {
       "name": "upside-agent-skills",
-      "description": "Try Upside from your AI assistant — register, trade, and stream on Mainnet (or Devnet) in plain language.",
+      "description": "Try UpsideMAX from your AI assistant — register, trade, and stream on Mainnet (or Devnet) in plain language.",
       "source": "./"
     }
   ]
